@@ -1,0 +1,13 @@
+program: sweep.py
+method: grid
+parameters:
+  tau_lims:
+    values: [[20,100]]
+  osc_cost:
+    values: [0.1]
+  lossF:
+    values: [1.5, 2.04, 2.75, 3.73]
+  learning_rate:
+    values: [1e-5]
+  train_w_in_scale:
+    values: [False]
