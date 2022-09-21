@@ -1,5 +1,4 @@
 import numpy as np
-from scipy import signal
 
 
 def circ_mean(a, w=1):

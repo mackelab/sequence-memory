@@ -4,11 +4,8 @@ import os
 from numpy.core.numeric import False_
 
 sys.path.append(os.getcwd())
-import time
-import scipy.io
 import numpy as np
-import argparse
-import datetime
+
 
 
 # Import the continuous rate model

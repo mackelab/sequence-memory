@@ -71,7 +71,6 @@ def run_summary(summary_settings, model_dir, data_dir):
         model_file = os.path.join(model_dir, fname)
         net = RNN()
         var = scipy.io.loadmat(model_file)
-        #print(var)
         print("FREQUENCY = " + str(var['lossF'][0][0]))
         data_list["loss_f"].append(var['lossF'][0][0])
         net.load_model(model_file)
@@ -83,7 +82,6 @@ def run_summary(summary_settings, model_dir, data_dir):
         out_channels = net.out_channels
         n_channels = net.n_channels
         n_items = int(var["n_items"][0][0])
-        n_osc = var["w_in"].shape[1] - n_channels
         N = var["N"][0][0]
 
         model_par, settings = reinstate_params(var)
@@ -126,9 +124,6 @@ def run_summary(summary_settings, model_dir, data_dir):
         Trial generator
         """
         val_perc = 0
-        rand_phase_bet = "none"
-        rand_phase_wit = True  #
-        freq_range = [1, 5]
         trial_gen = trial_generator(
             n_items,
             n_channels,
@@ -137,8 +132,7 @@ def run_summary(summary_settings, model_dir, data_dir):
         )
 
         trial_gen.train_ind = var["train_ind"][0]
-        trial_gen.phase = var["phase"]
-        trial_gen.freq = var["freq"]
+
     
         "Do val test"
         val_acc, train_acc = validation_accuracy(net, settings, var, trial_gen)
