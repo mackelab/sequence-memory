@@ -23,7 +23,7 @@ Set up the output dir where the output model will be saved
 if str(os.popen("hostname").read()) == "MackeLabTaichi\n":
     out_dir = os.path.join(os.getcwd(), "models")
 else:
-    out_dir = "/home/macke/mpals85/phase-coding/oscillatory_driven/models"
+    out_dir = "/mnt/qb/work/macke/mpals85/models"
 
 if os.path.exists(out_dir) == False:
     os.makedirs(out_dir)
