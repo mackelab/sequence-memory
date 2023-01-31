@@ -6,7 +6,6 @@ __pycache__/
 
 #Data, figures
 *.npy
-*.mat
 *.svg
 *.png
 *.pdf
@@ -20,7 +19,7 @@ __pycache__/
 .python-version
 wandb/
 artifacts/
-models/
+
 wandb-debug.log
 __pycache__
 .ipynb_checkpoints/

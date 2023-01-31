@@ -1,0 +1,2 @@
+rnn_model/models/**/* filter=lfs diff=lfs merge=lfs -text
+rnn_model/data/* filter=lfs diff=lfs merge=lfs -text
