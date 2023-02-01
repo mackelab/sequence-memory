@@ -19,11 +19,7 @@ from task import trial_generator
 Set up the output dir where the output model will be saved
 """
 
-# check if on cluster or workstation
-if str(os.popen("hostname").read()) == "MackeLabTaichi\n":
-    out_dir = os.path.join(os.getcwd(), "models")
-else:
-    out_dir = "/mnt/qb/work/macke/mpals85/models"
+out_dir = os.path.join(os.getcwd(), "models")
 
 if os.path.exists(out_dir) == False:
     os.makedirs(out_dir)
