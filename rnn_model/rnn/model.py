@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0,'..')
 sys.path.append(os.getcwd())
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
 sys.path.append(file_dir+"/..")
@@ -20,7 +20,7 @@ Recurrent neural network class
 """
 class RNN:
     def __init__(self):
-        pass
+       tf.disable_eager_execution()
 
     def initialize_model(self, model_params): 
         """
@@ -121,6 +121,7 @@ class RNN:
             + str(np.max(abs(np.linalg.eigvals(dale_mask.dot(w_rec) * conn_mask))))
         )
         self.initializer["w_in_scale"] = 1.0
+        self.initializer["w_out_scale"] = 1.0
 
         # add recurrent weights to dictionary
         self.initializer["w_rec"] = np.float32(w_rec)
