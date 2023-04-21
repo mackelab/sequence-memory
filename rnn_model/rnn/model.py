@@ -492,11 +492,11 @@ class RNN:
         """
         self.sync_wandb = sync_wandb
         if sync_wandb:
-            wandb.init(
-                project="phase-coding",
-                group="osc_driven_sweep",
-                config={**model_params, **training_params},
-            )  # , reinit=True)
+            #wandb.init(
+            #    project="phase-coding",
+            #    group="osc_driven_sweep",
+            #    config={**model_params, **training_params},
+            #)  # , reinit=True)
             config = wandb.config
 
             """overwrite config with sweep params"""

@@ -72,7 +72,7 @@ else:
 trial_gen.train_ind = var['train_ind'][0]
 
 print("loaded model")
-training_params['acc_threshold']=0.9
+training_params['acc_threshold']=0.85
 training_params['osc_reg_inh']=False
 training_params['random_delay']=20
 training_params['random_delay_per_tr']=True

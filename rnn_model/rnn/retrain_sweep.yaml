@@ -1,0 +1,12 @@
+program: retrain sweep.py
+method: grid
+parameters:
+  model_name:
+    values: ['a2r9nqtkSpecRad1.5DaleTrueTC20_100rand0sparse1osc1.5cost0.1',
+  a2r9nqtkSpecRad1.5DaleTrueTC20_100rand0sparse1osc2.04cost0.1,
+  a2r9nqtkSpecRad1.5DaleTrueTC20_100rand0sparse1osc2.75cost0.1,
+  a2r9nqtkSpecRad1.5DaleTrueTC20_100rand0sparse1osc3.73cost0.1,
+  d9weac1lSpecRad1.5DaleTrueTC20_100rand0sparse1osc1.5cost0.1,
+  d9weac1lSpecRad1.5DaleTrueTC20_100rand0sparse1osc1.5cost0.1,
+  d9weac1lSpecRad1.5DaleTrueTC20_100rand0sparse1osc1.5cost0.1,
+  d9weac1lSpecRad1.5DaleTrueTC20_100rand0sparse1osc1.5cost0.1]
