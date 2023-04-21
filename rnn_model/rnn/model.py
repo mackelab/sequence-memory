@@ -414,7 +414,7 @@ class RNN:
         LFPt = tf.stack(LFP[t1:t2])
         LFPt = tf.reduce_mean(LFPt, axis=1) #take mean input current over neurons
         x_u, x_var = tf.nn.moments(LFPt, [0])  # mean and var over time axis
-        x_z = (LFPt - x_u) / (tf.math.sqrt(2 * x_var + 1e-10))
+        x_z = (LFPt - x_u) / (tf.math.sqrt(2 * x_var + 1e-10))[t1:t2]
         tstep = training_params["deltaT"] / 1000
 
         
