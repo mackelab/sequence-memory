@@ -1,4 +1,4 @@
-SWEEPID = "uw0nrd7l"
+SWEEPID = "2i9d1mo3"
 import sys
 import os
 
@@ -33,7 +33,7 @@ def sweeper():
 
     else:
         out_dir = (
-            "/mnt/qb/work/macke/mpals85/data"
+            "/mnt/qb/work/macke/mpals85/ISI_Sweep"
         )
         gpu_frac = 0.7
 
