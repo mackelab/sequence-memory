@@ -7,7 +7,7 @@ import numpy as np
 from tf_utils import *
 from analysis.analysis_utils import *
 from scipy.stats import zscore
-from pycircstat.tests import watson_williams_test
+from pycircstat.tests import watson_williams as watson_williams_test
 from pycircstat.distributions import kappa
 from itertools import permutations
 import pickle

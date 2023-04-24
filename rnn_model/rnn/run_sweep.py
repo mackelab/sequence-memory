@@ -27,10 +27,9 @@ def sweeper():
 
     #Set up the output dir where the output model will be saved
     # check if on cluster or workstation
-    if str(os.popen("hostname").read()) == "MackeLabTaichi\n":
-        out_dir = os.path.join(os.getcwd(), "models/sweepWandB")
-        gpu_frac = 0.7
-
+    if str(os.popen("hostname").read()) == "Matthijss-MacBook-Air\n":
+        out_dir = "/Users/matthijs/sequence-memory/rnn_model/models/sweep_main"
+        gpu_frac = 0
     else:
         out_dir = (
             "/mnt/qb/work/macke/mpals85/ISI_Sweep"
