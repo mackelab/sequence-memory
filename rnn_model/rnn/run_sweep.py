@@ -1,4 +1,4 @@
-SWEEPID = "ydk3it3y"
+SWEEPID = "uw0nrd7l"
 import sys
 import os
 
@@ -92,8 +92,8 @@ def sweeper():
         "response_ons": 0,  # response onset
         "response_dur": 40,  # response duration
         # delay
-        "delays": [20,260],  # delay lengths (using curr learning)
-        "random_delay": 20,  # randomise delay with this amount
+        "delays": [20,250],  # delay lengths (using curr learning)
+        "random_delay": 0,  # randomise delay with this amount
         "random_delay_per_tr": True,  # Randomise delay every trial, else every batch
         # training
         "learning_rate": 1e-5,  # learning rate
@@ -114,7 +114,7 @@ def sweeper():
         "out_weight_cost": 0,  # l2 reg on output weights
         "lossF": 2.04, # regularisation frequency
         "reg_LFP": True, # regularise LFP (as opposed to single units)
-        "osc_cost": 0.5, # oscillatory regularisation amount
+        "osc_cost": 0.1, # oscillatory regularisation amount
         "osc_reg_inh": False,  # apply regularisation only to inhibitory neurons
         "probe_gain": 1,  # put emphasis on decision period
         "loss": loss,  # which loss function to use (sce or l2)

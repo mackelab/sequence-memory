@@ -1,4 +1,4 @@
-SWEEPID = "bsd6o1nr"
+SWEEPID = "lccht36k"
 import sys
 import os
 
@@ -43,8 +43,9 @@ def sweeper():
 
     else:
         out_dir = (
-            "/mnt/qb/work/macke/mpals85/data"
+            "/mnt/qb/work/macke/mpals85/retrain"
         )
+        model_dir = "/home/macke/mpals85/sequence-memory/rnn_model/models/sweep_main"
         gpu_frac = 0.7
 
     if os.path.exists(out_dir) == False:
@@ -55,7 +56,7 @@ def sweeper():
     """
 
     gpu = "0"
-    gpu_frac = 0
+    gpu_frac = .7
 
     net = RNN()
 
@@ -65,8 +66,8 @@ def sweeper():
     name = wandb.config.model_name
     print(name)
     #name = "SpecRad1.5DaleTrue2.04cost0.1"
-    net.load_model(os.path.join(out_dir, name))
-    model_dir = os.path.join(out_dir, name)
+    net.load_model(os.path.join(model_dir, name))
+    model_dir = os.path.join(model_dir, name)
     var = scipy.io.loadmat(model_dir)
     if len(var['val_ind']):
         val_perc = len(var['val_ind'][0])/(len(var['train_ind'][0])+len(var['val_ind'][0]))
@@ -85,17 +86,17 @@ def sweeper():
     trial_gen.train_ind = var['train_ind'][0]
 
     print("loaded model")
-    training_params['acc_threshold']=0.85
+    training_params['acc_threshold']=0.95
     training_params['osc_reg_inh']=False
     training_params['random_delay']=20
     training_params['random_delay_per_tr']=True
     training_params['delays']=[training_params['delays'][-1]+training_params['random_delay']//2]
     training_params["learning_rate"]=1e-5
     training_params["n_trials"]=50000
-
+    training_params['osc_cost']=.5
 
     wandb.config.update({**model_params, **training_params})
-    net.train(training_params, model_params, trial_gen, gpu, gpu_frac, out_dir, new_run = False,sync_wandb=False)
+    net.train(training_params, model_params, trial_gen, gpu, gpu_frac, out_dir, new_run = False,sync_wandb=True)
 
 
 

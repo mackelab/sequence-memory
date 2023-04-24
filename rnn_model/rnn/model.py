@@ -20,6 +20,7 @@ Recurrent neural network class
 """
 class RNN:
     def __init__(self):
+       print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
        tf.disable_eager_execution()
 
     def initialize_model(self, model_params): 
@@ -492,11 +493,12 @@ class RNN:
         """
         self.sync_wandb = sync_wandb
         if sync_wandb:
-            #wandb.init(
-            #    project="phase-coding",
-            #    group="osc_driven_sweep",
-            #    config={**model_params, **training_params},
-            #)  # , reinit=True)
+            if new_run:
+                wandb.init(
+                    project="phase-coding",
+                    group="osc_driven_sweep",
+                    config={**model_params, **training_params},
+                )  # , reinit=True)
             config = wandb.config
 
             """overwrite config with sweep params"""
@@ -510,8 +512,8 @@ class RNN:
             training_params["tau_lims"] = config.tau_lims
             training_params["learning_rate"] = config.learning_rate     
             training_params["train_w_in_scale"] = config.train_w_in_scale
-
-
+            training_params["stim_offs"] = config.stim_offs
+            training_params["probe_offs"] = config.stim_offs
         self.activation = training_params["activation"]
 
         # Transfer function options
