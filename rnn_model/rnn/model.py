@@ -548,7 +548,9 @@ class RNN:
 
         # make dictionary of initial states
         self.pre_train_state = self.initializer.copy()
-
+        print("OFFSET DURATIONS:")
+        print(training_params["stim_offs"], training_params["probe_offs"])
+        print("\n")
         # loop through all delays (curriculum learning)
         for delay in training_params["delays"]:
             print(delay)
