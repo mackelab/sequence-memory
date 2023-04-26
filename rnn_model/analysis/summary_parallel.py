@@ -1,82 +1,108 @@
 import scipy.io
 import os, sys
-sys.path.insert(0,'..')
+sys.path.append(os.getcwd())
+file_dir = os.path.dirname(__file__)
+sys.path.append(file_dir+ "/..")
 from rnn.model import RNN
 from rnn.task import trial_generator
 import numpy as np
-from tf_utils import *
+from analysis.tf_utils import *
 from analysis.analysis_utils import *
 from scipy.stats import zscore
 from pycircstat.tests import watson_williams as watson_williams_test
 from pycircstat.distributions import kappa
 from itertools import permutations
 import pickle
+from joblib import Parallel, delayed
 
-def run_summary(summary_settings, model_dir, data_dir,vex=True):
-    
-    """
-    Calculates summary statistics for many models
+class Summary:
 
-    Args:
-        summary_settings: dictionary of settings to use
-        model_dir: String denoting folder with models
-        data_dir: String denoting folder to store the result of this function
+    def __init__(self):
+        pass
 
-    Returns:
-        data_list: Dictionary with summary statistics
-        summary_settings: dictionary of used settings
-    
-    """
+    def run_summary(self, summary_settings, model_dir, data_dir,n_jobs=1,calc_vex=False):
+        
+        """
+        Calculates summary statistics for many models
 
-    data_list = {
-    "model_names":[],
-    "loss_f": [],
-    "acc":[],
-    "val_acc":[],
-    "train_acc":[],
-    "pre_spectrum":[],
-    "post_spectrum":[],
-    "ranked_neurons":[],
-    "wilc_ps":[],
-    "d_primes":[],
-    "vex":[],
-    "shvex":[],
-    "vex_f":[],
-    "phase_order":[],
-    "kappas":[],
-    "low_vex" :[],
-    "low_shvex":[],
-    "low_kappas":[],
-    "ISI":[],
-    "or_acc":[],
-    "perm_new":True        
-    }
+        Args:
+            summary_settings: dictionary of settings to use
+            model_dir: String denoting folder with models
+            data_dir: String denoting folder to store the result of this function
 
-    
-    data_list["summary_settings"]=summary_settings
-    
-    files_and_directories = os.listdir(model_dir)
-    for fi, file in enumerate(files_and_directories):
-        if file[0]=='.':
-            print("removing: " +str(file))
-            files_and_directories.pop(fi)
+        Returns:
+            data_list: Dictionary with summary statistics
+            summary_settings: dictionary of used settings
+        
+        """
+        self.calc_vex=calc_vex
+        self.summary_settings = summary_settings
+        self.model_dir = model_dir
+        files_and_directories = os.listdir(model_dir)
+        for fi, file in enumerate(files_and_directories):
+            if file[0]=='.':
+                print("removing: " +str(file))
+                files_and_directories.pop(fi)
 
-    if os.path.isfile(data_dir):
-        with open(data_dir, "rb") as fp:   #Pickling
-            data_list = pickle.load(fp)
-        return data_list, summary_settings
+        if os.path.isfile(data_dir):
+            with open(data_dir, "rb") as fp:   #Pickling
+                savedict= pickle.load(fp)
+                result = savedict["results"]
+                summary_settings = savedict["summary_settings"]
+            return result, summary_settings
+        
+        self.results = Parallel(n_jobs=n_jobs)(delayed(self.run_summary_one_model)(fname) 
+                                    for fname in files_and_directories)
 
-    for findex, fname in enumerate(files_and_directories):
+
+        savedict={
+            "results":self.results,
+            "summary_settings":summary_settings
+
+        }
+        with open(data_dir, "wb") as fp:   #Pickling
+            pickle.dump(savedict, fp)
+        return self.results, summary_settings
+        #for findex, fname in enumerate(files_and_directories):
+
+
+    def run_summary_one_model(self, fname):
+
+        data_list = {
+        "model_names":[],
+        "loss_f": [],
+        "acc":[],
+        "val_acc":[],
+        "train_acc":[],
+        "pre_spectrum":[],
+        "post_spectrum":[],
+        "ranked_neurons":[],
+        "wilc_ps":[],
+        "d_primes":[],
+        "vex":[],
+        "shvex":[],
+        "vex_f":[],
+        "phase_order":[],
+        "kappas":[],
+        "low_vex" :[],
+        "low_shvex":[],
+        "low_kappas":[],
+        "ISI":[],
+        "or_acc":[],
+        "perm_new":True        
+        }
+
+
         print(fname)
         
         """Load Model"""
-        model_file = os.path.join(model_dir, fname)
+        model_file = os.path.join(self.model_dir, fname)
         net = RNN()
         var = scipy.io.loadmat(model_file)
         print("FREQUENCY = " + str(var['lossF'][0][0]))
 
         net.load_model(model_file)
-        if summary_settings["disable_noise"]:
+        if self.summary_settings["disable_noise"]:
             net.rec_noise = 0.
 
 
@@ -87,10 +113,10 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
         N = var["N"][0][0]
 
         model_par, settings = reinstate_params(var)
-        delay = int(summary_settings["delay_ms"]/settings['deltaT'])
-        settings["delay"] = delay *summary_settings["upsample"]
+        delay = int(self.summary_settings["delay_ms"]/settings['deltaT'])
+        settings["delay"] = delay *self.summary_settings["upsample"]
         settings["stim_ons"] = 125
-        if summary_settings["randomize_onset"]:
+        if self.summary_settings["randomize_onset"]:
             settings["rand_ons"] = int(1000/(var['lossF'][0][0]*settings['deltaT']))
         if settings["rand_ons"]>settings["stim_ons"]:
             print("WARNING, can't use this random onset, defaulting to 50 steps")
@@ -101,9 +127,9 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
         settings["stim_jit"] = [0, 1]
         settings["probe_jit_dist"] = "uniform"
         settings["probe_jit"] = [0, 1]
-        settings["batch_size"] = summary_settings["n_trials"]        
-        n_trials = summary_settings["n_trials"]  
-        upsample_time(summary_settings["upsample"], settings)
+        settings["batch_size"] = self.summary_settings["n_trials"]        
+        n_trials = self.summary_settings["n_trials"]  
+        upsample_time(self.summary_settings["upsample"], settings)
 
 
 
@@ -146,14 +172,14 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
             print("Original Train Accuracy: " + str(or_acc))
         """Loop through ISIs"""
         
-        for isi in summary_settings["ISIs"]:
-            data_list["or_acc"].append(or_acc)
-            isi*=summary_settings["upsample"]
+        for isi in self.summary_settings["ISIs"]:
+            data_list["or_acc"]=or_acc
+            isi*=self.summary_settings["upsample"]
             settings["stim_offs"] = isi
             settings["probe_offs"] = isi
-            data_list["ISI"].append(isi)
-            data_list["model_names"].append(fname)     
-            data_list["loss_f"].append(var['lossF'][0][0])
+            data_list["ISI"]=isi
+            data_list["model_names"]=fname
+            data_list["loss_f"]=var['lossF'][0][0]
 
             delay_start = (
                 settings["stim_ons"]
@@ -186,13 +212,13 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
         
             "Do val test"
             val_acc, train_acc = validation_accuracy(net, settings, var, trial_gen)
-            data_list["val_acc"].append(val_acc)
-            data_list["train_acc"].append(train_acc)
-            settings["batch_size"] = summary_settings["n_trials"]        
+            data_list["val_acc"]=val_acc
+            data_list["train_acc"]=train_acc
+            settings["batch_size"] = self.summary_settings["n_trials"]        
 
             
             """Generate trials + accuracy"""
-            if summary_settings["balance_trials"]:
+            if self.summary_settings["balance_trials"]:
                 stims = draw_balanced_trials()
                 stim_ind = []
                 for i in range(len(stims[0])):
@@ -236,7 +262,7 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
             x1, r1, o1  = net.predict(settings, stim[:, :, :])
             xu, ru, ou= untrained_net.predict(settings, stim[:, :, :])        
             acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
-            data_list["acc"].append(acc)
+            data_list["acc"]=acc
 
             r1+=1
             r1/=2
@@ -244,13 +270,13 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
             ru/=2
 
             "Extract LFP"
-            LFP = get_LFP(var, r1, stim, onlyGaba=summary_settings["onlyGaba"])
+            LFP = get_LFP(var, r1, stim, onlyGaba=self.summary_settings["onlyGaba"])
             LFP = zscore(LFP, axis=0)
-            LFP_u = get_LFP(var, ru, stim, onlyGaba=summary_settings["onlyGaba"])
+            LFP_u = get_LFP(var, ru, stim, onlyGaba=self.summary_settings["onlyGaba"])
             LFP_u = zscore(LFP_u, axis=0)
 
 
-            if summary_settings["substr_mean_LFP"]:
+            if self.summary_settings["substr_mean_LFP"]:
                 substr = np.mean(LFP, axis=1)
                 substr_u = np.mean(LFP_u, axis=1)
 
@@ -268,27 +294,30 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                     7,
                     time,
                     settings["deltaT"] / 1000,
-                    summary_settings["freqs_l"],
-                )
-                _, amp_u = scalogram(
-                    LFP_u[:, tr] - substr_u,
-                    7,
-                    time,
-                    settings["deltaT"] / 1000,
-                    summary_settings["freqs_l"],
+                    self.summary_settings["freqs_l"],
                 )
                 amps.append(amp)
-                amps_u.append(amp_u)
-
             amp = np.mean(np.array(amps),axis=0)
-            amp_u = np.mean(np.array(amps_u),axis=0)
+            data_list["post_spectrum"]=amp
             
-            data_list["post_spectrum"].append(amp)
-            data_list["pre_spectrum"].append(amp_u)
-            
-            main_freq = summary_settings["freqs_l"][np.argmax(np.mean(amp[:, delay_start:delay_end], axis=1))]
+            if self.calc_vex:
+                for tr in range(n_trials):
+
+                    _, amp_u = scalogram(
+                        LFP_u[:, tr] - substr_u,
+                        7,
+                        time,
+                        settings["deltaT"] / 1000,
+                        self.summary_settings["freqs_l"],
+                    )
+                    amps_u.append(amp_u)
+                amp_u = np.mean(np.array(amps_u),axis=0)
+                data_list["pre_spectrum"]=amp_u
+
+
+            main_freq = self.summary_settings["freqs_l"][np.argmax(np.mean(amp[:, delay_start:delay_end], axis=1))]
             main_power = np.max(np.mean(amp[:, delay_start:delay_end], axis=1))
-            baseline_freq = summary_settings["freqs_l"][np.argmax(np.mean(amp[:, :settings["stim_ons"]], axis=1))]
+            baseline_freq = self.summary_settings["freqs_l"][np.argmax(np.mean(amp[:, :settings["stim_ons"]], axis=1))]
             baseline_power = np.max(np.mean(amp[:, :settings["stim_ons"]], axis=1))
 
             print("delay freq = " + str(main_freq) + " with power " + str(main_power) +
@@ -308,17 +337,17 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                 baseline_start=baseline_start,
                 baseline_len=baseline_len,
                 stim_len=stim_len,
-                normalize=summary_settings["normalize_fr_extract"],
+                normalize=self.summary_settings["normalize_fr_extract"],
             )
 
             wilc_pvals = get_wilc_pvals(data, onesided=True, common_baseline=True)
-            d_primes, responsive, prefered_stim = get_dprime(data, wilc_pvals, cutoff=summary_settings["cutoff_p"])
+            d_primes, responsive, prefered_stim = get_dprime(data, wilc_pvals, cutoff=self.summary_settings["cutoff_p"])
             ranked_neurons = np.argsort(d_primes)
 
 
-            data_list["ranked_neurons"].append(ranked_neurons)
-            data_list["d_primes"].append(d_primes)
-            data_list["wilc_ps"].append(wilc_pvals)
+            data_list["ranked_neurons"]=ranked_neurons
+            data_list["d_primes"]=d_primes
+            data_list["wilc_ps"]=wilc_pvals
             cutoff_d = np.median(d_primes[responsive.astype(bool)])
             print("Median d prime: " +str(cutoff_d))
             print(
@@ -328,109 +357,112 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
 
             up50th = np.arange(200)[np.logical_and(d_primes>cutoff_d, responsive)]
             low50th = np.arange(200)[np.logical_and(d_primes<cutoff_d, responsive)]
-            t1 = delay_start + summary_settings["delay_buffer1"] - settings["rand_ons"]
-            t2 = delay_end - summary_settings["delay_buffer2"] - settings["rand_ons"]
+
+
+            """
+            Calculate VEX
+
+            """
+            # freqs = np.arange(main_freq-2/3, main_freq+2/3, 1/3)#3.8
+            # freqs = np.arange(0.25, 1.5, 0.25)#3.8
+
+            t1 = delay_start + self.summary_settings["delay_buffer1"] - settings["rand_ons"]
+            t2 = delay_end - self.summary_settings["delay_buffer2"] - settings["rand_ons"]
             delay_time = time[t1:t2]
-            for f in summary_settings["freqs"]:
-                if dt_sec / f < summary_settings["nbins"]:
+            for f in self.summary_settings["freqs"]:
+                if dt_sec / f < self.summary_settings["nbins"]:
                     print("Warning: too much bins for f = " + str(f))
 
-            bin_lims = np.linspace(-np.pi, np.pi, summary_settings["nbins"] + 1)
-            bin_centers = bin_lims[:-1] + np.pi / summary_settings["nbins"]
-
-            if vex:
-
-                """
-                Calculate VEX
-
-                """
-                # freqs = np.arange(main_freq-2/3, main_freq+2/3, 1/3)#3.8
-                # freqs = np.arange(0.25, 1.5, 0.25)#3.8
+            bin_lims = np.linspace(-np.pi, np.pi, self.summary_settings["nbins"] + 1)
+            bin_centers = bin_lims[:-1] + np.pi / self.summary_settings["nbins"]
 
 
-                vex = np.zeros((len(summary_settings["freqs"]), N))
-                kappas = np.zeros((len(summary_settings["freqs"]), N))
-                shvex = np.zeros((len(summary_settings["freqs"]), N))
-                shuffle_ind = np.random.choice(np.arange(n_items), n_trials)
+            vex = np.zeros((len(self.summary_settings["freqs"]), N))
+            kappas = np.zeros((len(self.summary_settings["freqs"]), N))
+            shvex = np.zeros((len(self.summary_settings["freqs"]), N))
+            shuffle_ind = np.random.choice(np.arange(n_items), n_trials)
 
-                for neui, neuron in enumerate(up50th):
+            for neui, neuron in enumerate(up50th):
 
-                    if neui % 10 == 0:
-                        print("{:.2f}% done".format(100 * neui / len(up50th)))
+                if neui % 10 == 0:
+                    print("{:.2f}% done".format(100 * neui / len(up50th)))
 
-                    pref_stim = prefered_stim[neuron]
-                    pref_r, _, LFPs = extract_traces(
-                        r1, stim, neuron, pref_stim, settings, True, var, summary_settings["onlyGaba"]
-                    )
-                    for fi, f in enumerate(summary_settings["freqs"]):
+                pref_stim = prefered_stim[neuron]
+                pref_r, _, LFPs = extract_traces(
+                    r1, stim, neuron, pref_stim, settings, True, var, self.summary_settings["onlyGaba"]
+                )
+                for fi, f in enumerate(self.summary_settings["freqs"]):
 
-                        watsdat = []
-                        watsw = []
-                        watsw_shuffle = []
-                        spikephasehist_shuffle = np.zeros((4,summary_settings["nbins"]))
-                        counter = 0
-                        cwt = complex_wavelet(timestep, f, 7)
-                        kappa_n = np.zeros(4)
-                        for stim_pos in range(settings["n_items"]):
-                            spikephasehist = np.zeros(summary_settings["nbins"])
-                            for tr in range(np.array(LFPs[stim_pos]).shape[1]):
-                                if summary_settings["ref_phase"] == "sine":
-                                    LFP_phase = wrap(time * 2 * np.pi * f)
-                                elif summary_settings["ref_phase"] == "LFP":
-                                    LFP_phase, _ = inst_phase(
-                                        LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
+                    watsdat = []
+                    watsw = []
+                    watsw_shuffle = []
+                    spikephasehist_shuffle = np.zeros((4,self.summary_settings["nbins"]))
+                    counter = 0
+                    cwt = complex_wavelet(timestep, f, 7)
+                    kappa_n = np.zeros(4)
+                    for stim_pos in range(settings["n_items"]):
+                        spikephasehist = np.zeros(self.summary_settings["nbins"])
+                        for tr in range(np.array(LFPs[stim_pos]).shape[1]):
+                            if self.summary_settings["ref_phase"] == "sine":
+                                LFP_phase = wrap(time * 2 * np.pi * f)
+                            elif self.summary_settings["ref_phase"] == "LFP":
+                                LFP_phase, _ = inst_phase(
+                                    LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
+                                )
+                            else:
+                                print("WARNING: reference phase not recognised!")
+
+                            bin_ind = np.digitize(LFP_phase[t1:t2], bin_lims) - 1
+                            firing_trace = pref_r[stim_pos][t1:t2, tr]
+                            # firing_trace -= min(firing_trace)
+                            # firing_trace  /= max(firing_trace)+1e-5
+                            for b in range(self.summary_settings["nbins"]):
+                                summed_spikes = np.sum(firing_trace[bin_ind == b])
+                                occ = np.count_nonzero(bin_ind == b)
+                                if occ > 0:
+                                    spikephasehist[b] += summed_spikes / occ
+                                    spikephasehist_shuffle[shuffle_ind[counter], b] += (
+                                        summed_spikes / occ
                                     )
-                                else:
-                                    print("WARNING: reference phase not recognised!")
+                            counter += 1
 
-                                bin_ind = np.digitize(LFP_phase[t1:t2], bin_lims) - 1
-                                firing_trace = pref_r[stim_pos][t1:t2, tr]
-                                # firing_trace -= min(firing_trace)
-                                # firing_trace  /= max(firing_trace)+1e-5
-                                for b in range(summary_settings["nbins"]):
-                                    summed_spikes = np.sum(firing_trace[bin_ind == b])
-                                    occ = np.count_nonzero(bin_ind == b)
-                                    if occ > 0:
-                                        spikephasehist[b] += summed_spikes / occ
-                                        spikephasehist_shuffle[shuffle_ind[counter], b] += (
-                                            summed_spikes / occ
-                                        )
-                                counter += 1
+                        avg, avglen = circ_mean(bin_centers, spikephasehist)
+                        watsw.append(np.array(spikephasehist))
+                        watsdat.append(bin_centers)
+                        kappa_n[stim_pos] = kappa(bin_centers, w = spikephasehist)
+                    for stim_pos in range(settings["n_items"]):
+                        watsw_shuffle.append(np.array(spikephasehist_shuffle[stim_pos]))
 
-                            avg, avglen = circ_mean(bin_centers, spikephasehist)
-                            watsw.append(np.array(spikephasehist))
-                            watsdat.append(bin_centers)
-                            kappa_n[stim_pos] = kappa(bin_centers, w = spikephasehist)
-                        for stim_pos in range(settings["n_items"]):
-                            watsw_shuffle.append(np.array(spikephasehist_shuffle[stim_pos]))
+                    anovatable = watson_williams_test(
+                        bin_centers, bin_centers, bin_centers, bin_centers, w=watsw_shuffle
+                    )[1]
+                    shvex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
 
-                        anovatable = watson_williams_test(
-                            bin_centers, bin_centers, bin_centers, bin_centers, w=watsw_shuffle
-                        )[1]
-                        shvex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
+                    anovatable = watson_williams_test(
+                        watsdat[0], watsdat[1], watsdat[2], watsdat[3], w=watsw
+                    )[1]
+                    vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
+                    kappas[fi, neuron] = np.mean(kappa_n)
+            vex_fr_ind = np.argmax(np.sum(vex, axis=1))
+            #vex_fr_ind = np.where(np.isclose(freqs,var['lossF'][0][0]))[0][0]#np.argmax(np.sum(vex, axis=1))
+            vex_fr = self.summary_settings["freqs"][vex_fr_ind]
+            print("highest vex at fr: {:.2f}".format(vex_fr))
+            data_list["vex"]=vex
+            data_list["shvex"]=shvex
+            data_list["vex_f"]=vex_fr
+            data_list["kappas"]=kappas
+            
+            
 
-                        anovatable = watson_williams_test(
-                            watsdat[0], watsdat[1], watsdat[2], watsdat[3], w=watsw
-                        )[1]
-                        vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
-                        kappas[fi, neuron] = np.mean(kappa_n)
-                vex_fr_ind = np.argmax(np.sum(vex, axis=1))
-                #vex_fr_ind = np.where(np.isclose(freqs,var['lossF'][0][0]))[0][0]#np.argmax(np.sum(vex, axis=1))
-                vex_fr = summary_settings["freqs"][vex_fr_ind]
-                print("highest vex at fr: {:.2f}".format(vex_fr))
-                data_list["vex"].append(vex)
-                data_list["shvex"].append(shvex)
-                data_list["vex_f"].append(vex_fr)
-                data_list["kappas"].append(kappas)
+            """
+            calculate vex low 50th
+            """            
+            if self.calc_vex:
 
 
-                """
-                calculate vex low 50th
-                """
-
-                low_vex = np.zeros((len(summary_settings["freqs"]), N))
-                low_kappas = np.zeros((len(summary_settings["freqs"]), N))
-                low_shvex = np.zeros((len(summary_settings["freqs"]), N))
+                low_vex = np.zeros((len(self.summary_settings["freqs"]), N))
+                low_kappas = np.zeros((len(self.summary_settings["freqs"]), N))
+                low_shvex = np.zeros((len(self.summary_settings["freqs"]), N))
 
                 for neui, neuron in enumerate(low50th):
 
@@ -439,23 +471,23 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
 
                     pref_stim = prefered_stim[neuron]
                     pref_r, _, LFPs = extract_traces(
-                        r1, stim, neuron, pref_stim, settings, True, var, summary_settings["onlyGaba"]
+                        r1, stim, neuron, pref_stim, settings, True, var, self.summary_settings["onlyGaba"]
                     )
-                    for fi, f in enumerate(summary_settings["freqs"]):
+                    for fi, f in enumerate(self.summary_settings["freqs"]):
 
                         watsdat = []
                         watsw = []
                         watsw_shuffle = []
-                        spikephasehist_shuffle = np.zeros((4,summary_settings["nbins"]))
+                        spikephasehist_shuffle = np.zeros((4,self.summary_settings["nbins"]))
                         counter = 0
                         cwt = complex_wavelet(timestep, f, 7)
                         kappa_n = np.zeros(4)
                         for stim_pos in range(settings["n_items"]):
-                            spikephasehist = np.zeros(summary_settings["nbins"])
+                            spikephasehist = np.zeros(self.summary_settings["nbins"])
                             for tr in range(np.array(LFPs[stim_pos]).shape[1]):
-                                if summary_settings["ref_phase"] == "sine":
+                                if self.summary_settings["ref_phase"] == "sine":
                                     LFP_phase = wrap(time * 2 * np.pi * f)
-                                elif summary_settings["ref_phase"] == "LFP":
+                                elif self.summary_settings["ref_phase"] == "LFP":
                                     LFP_phase, _ = inst_phase(
                                         LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
                                     )
@@ -466,7 +498,7 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                                 firing_trace = pref_r[stim_pos][t1:t2, tr]
                                 # firing_trace -= min(firing_trace)
                                 # firing_trace  /= max(firing_trace)+1e-5
-                                for b in range(summary_settings["nbins"]):
+                                for b in range(self.summary_settings["nbins"]):
                                     summed_spikes = np.sum(firing_trace[bin_ind == b])
                                     occ = np.count_nonzero(bin_ind == b)
                                     if occ > 0:
@@ -494,25 +526,20 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                         low_vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
                         low_kappas[fi, neuron] = np.mean(kappa_n)
 
-                data_list["low_vex"].append(low_vex)
-                data_list["low_shvex"].append(low_shvex)
-                data_list["low_kappas"].append(low_kappas)
+                data_list["low_vex"]=low_vex
+                data_list["low_shvex"]=low_shvex
+                data_list["low_kappas"]=low_kappas
 
             """
             Phase order
             """
             # SUM UP ALL HISTOGRAMS
             # AND CALCULATE PERCENTAGE MATCHING ORDER
-            if vex:
-                f = vex_fr
-            else:
-                f= np.argmax(np.mean(amp,axis=1))
+            #if self.calc_vex:
+            f = vex_fr
+            #else:
+            #    main_freq
     
-
-            # Initialize histograms
-            #totalhist_stim = np.zeros((settings["n_items"],summary_settings["nbins"]))
-            #totalhist_phase = np.zeros((settings["n_items"], summary_settings["nbins"]))
-
             # For counting Percentage matching order
             #perms = list(set(permutations([1, 2, 3])))
             perms= np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
@@ -523,26 +550,26 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
             for neui, neuron in enumerate(up50th):
 
                 
-                #order = np.zeros(3)
+                order = np.zeros(3)
                 avgs = np.zeros(4)
-                neuronhist = np.zeros((settings["n_items"], summary_settings["nbins"]))
+                neuronhist = np.zeros((settings["n_items"], self.summary_settings["nbins"]))
 
                 # Extract trials for prefered stimulus
                 pref_stim = prefered_stim[neuron]
                 pref_r, _, LFPs = extract_traces(
-                    r1, stim, neuron, pref_stim, settings, True, var, summary_settings["onlyGaba"]
+                    r1, stim, neuron, pref_stim, settings, True, var, self.summary_settings["onlyGaba"]
                 )
 
                 # Calculate hist per stim position
                 for stim_pos in range(settings["n_items"]):
-                    spikephasehist = np.zeros(summary_settings["nbins"])
+                    spikephasehist = np.zeros(self.summary_settings["nbins"])
 
                     # Calculate hist per trial
                     for tr in range(np.array(LFPs[stim_pos]).shape[1]):
 
-                        if summary_settings["ref_phase"] == "sine":
+                        if self.summary_settings["ref_phase"] == "sine":
                             LFP_phase = wrap(time * 2 * np.pi * f)
-                        elif summary_settings["ref_phase"] == "LFP":
+                        elif self.summary_settings["ref_phase"] == "LFP":
                             LFP_phase, _ = inst_phase(
                                 LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
                             )
@@ -552,7 +579,7 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                         firing_trace = pref_r[stim_pos][t1:t2, tr]
                         firing_trace -= min(firing_trace)
                         firing_trace /= max(firing_trace) + 1e-5
-                        for b in range(summary_settings["nbins"]):
+                        for b in range(self.summary_settings["nbins"]):
                             summed_spikes = np.sum(firing_trace[bin_ind == b])
 
                             # Normalize by bin occurance
@@ -563,8 +590,8 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                     avgs[stim_pos] = circ_mean(bin_centers, np.array(spikephasehist))[0]
                     neuronhist[stim_pos] = np.array(spikephasehist)
 
-                ## Calculate order of phases
-                #phase_order = np.argsort(avgs)
+                # Calculate order of phases
+                phase_order = np.argsort(avgs)
 
                 # Calculate amount matching certain stim order
                 avgs -= avgs[0]
@@ -575,9 +602,5 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                         #print("neuron no: " + str(neuron) + "phase order " + str(permi))
 
             #print("appending phase order:" + str(n_match))
-            data_list["phase_order"].append(n_match)
-
-
-    with open(data_dir, "wb") as fp:   #Pickling
-        pickle.dump(data_list, fp)
-    return data_list, summary_settings
+            data_list["phase_order"]=n_match
+            return data_list
