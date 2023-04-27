@@ -5,7 +5,7 @@ sys.path.append(file_dir+ "/..")
 from analysis.summary_parallel import Summary
 import numpy as np
 base_dir = ""
-task_dir = "datasweep_retrain26.pkl"
+task_dir = "datasweep_ISI.pkl"
 calc_vex=True
 summary_settings = {
     "upsample" : 1, # Increase temporal resolution
@@ -25,7 +25,7 @@ summary_settings = {
     "nbins": 20, # Number of bins for 'spike' phase histograms
     "common_baseline" : True, # Common baseline
     "freqs": [1, 1.5, 1.75, 2.04, 2.37, 2.75, 3.21, 3.73, 4.35, 5], # Frequencies for vex plots
-    "ISIs":[20]
+    "ISIs":[20] #[5,10,15,20,25,30,35,40]
 }
 
 Sum_obj = Summary()
@@ -37,7 +37,7 @@ if str(os.popen("hostname").read()) == "Matthijss-MacBook-Air\n":
     
 else:
     data_dir = (
-        "/mnt/qb/work/macke/mpals85/retrain"
+        "/mnt/qb/work/macke/mpals85/ISI_data/"+str(task_dir)
     )
-
-data_list, summary_settings = Sum_obj.run_summary(summary_settings, model_dir, data_dir,n_jobs=5, calc_vex=calc_vex)
+    model_dir = "/home/macke/mpals85/sequence-memory/rnn_model/models/sweep_main"
+data_list, summary_settings = Sum_obj.run_summary(summary_settings, model_dir, data_dir,n_jobs=20, calc_vex=calc_vex)
