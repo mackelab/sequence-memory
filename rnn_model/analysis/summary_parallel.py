@@ -53,7 +53,7 @@ class Summary:
             return result, summary_settings
         
         filesandIsis = [[fname,isi] for fname in files_and_directories for isi in summary_settings['ISIs']]
-        print(filesandIsis)
+        #print(filesandIsis)
         self.results = Parallel(n_jobs=n_jobs)(delayed(self.run_summary_one_model)(fnameISI) 
                                     for fnameISI in filesandIsis)
 

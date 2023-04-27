@@ -5,8 +5,8 @@ sys.path.append(file_dir+ "/..")
 from analysis.summary_parallel import Summary
 import numpy as np
 base_dir = ""
-task_dir = "datasweep_ISI3.pkl"
-calc_vex=True
+task_dir = "datasweep_ISI5.pkl"
+calc_vex=False
 summary_settings = {
     "upsample" : 1, # Increase temporal resolution
     "ref_phase" : "sine", # Reference phase for 'spike-phase' histogram, either sine or LFP
@@ -25,7 +25,7 @@ summary_settings = {
     "nbins": 20, # Number of bins for 'spike' phase histograms
     "common_baseline" : True, # Common baseline
     "freqs": [1, 1.5, 1.75, 2.04, 2.37, 2.75, 3.21, 3.73, 4.35, 5], # Frequencies for vex plots
-    "ISIs":[5,10]
+    "ISIs":[5,10,15,20,25,30,35,40]
 }
 
 Sum_obj = Summary()
