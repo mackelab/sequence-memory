@@ -32,6 +32,7 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
     "model_names":[],
     "loss_f": [],
     "acc":[],
+    "w_rec":[],
     "val_acc":[],
     "train_acc":[],
     "pre_spectrum":[],
@@ -55,7 +56,7 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
     
     data_list["summary_settings"]=summary_settings
     
-    files_and_directories = os.listdir(model_dir)
+    files_and_directories = os.listdir(model_dir)[:3]
     for fi, file in enumerate(files_and_directories):
         if file[0]=='.':
             print("removing: " +str(file))
@@ -89,7 +90,10 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
         model_par, settings = reinstate_params(var)
         delay = int(summary_settings["delay_ms"]/settings['deltaT'])
         settings["delay"] = delay *summary_settings["upsample"]
-        settings["stim_ons"] = 125
+        if "stim_ons" in summary_settings:
+            settings["stim_ons"] = int(summary_settings["stim_ons"]*summary_settings["upsample"])
+        else:
+            settings["stim_ons"] = 125
         if summary_settings["randomize_onset"]:
             settings["rand_ons"] = int(1000/(var['lossF'][0][0]*settings['deltaT']))
         if settings["rand_ons"]>settings["stim_ons"]:
@@ -104,8 +108,6 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
         settings["batch_size"] = summary_settings["n_trials"]        
         n_trials = summary_settings["n_trials"]  
         upsample_time(summary_settings["upsample"], settings)
-
-
 
 
         """ACC with original ISI"""
@@ -144,9 +146,15 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
             _, _, o1  = net.predict(settings, stim[:, :, :])
             or_acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
             print("Original Train Accuracy: " + str(or_acc))
-        """Loop through ISIs"""
         
+        tw_rec = np.copy(var["t_w_rec"])
+        dale_mask = net.initializer["dale_mask"]
+        conn_mask = net.initializer["conn_mask"]
+        w_rec = [tw_rec,dale_mask,conn_mask]
+        """Loop through ISIs"""
         for isi in summary_settings["ISIs"]:
+   
+            data_list["w_rec"].append(w_rec)
             data_list["or_acc"].append(or_acc)
             isi*=summary_settings["upsample"]
             settings["stim_offs"] = isi

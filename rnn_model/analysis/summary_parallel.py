@@ -75,6 +75,7 @@ class Summary:
         "model_names":[],
         "loss_f": [],
         "acc":[],
+        "w_rec":[],
         "val_acc":[],
         "train_acc":[],
         "pre_spectrum":[],
@@ -120,7 +121,10 @@ class Summary:
         model_par, settings = reinstate_params(var)
         delay = int(self.summary_settings["delay_ms"]/settings['deltaT'])
         settings["delay"] = delay *self.summary_settings["upsample"]
-        settings["stim_ons"] = 125
+        if "stim_ons" in summary_settings:
+            settings["stim_ons"] = int(summary_settings["stim_ons"]*summary_settings["upsample"])
+        else:
+            settings["stim_ons"] = 125        
         if self.summary_settings["randomize_onset"]:
             settings["rand_ons"] = int(1000/(var['lossF'][0][0]*settings['deltaT']))
         if settings["rand_ons"]>settings["stim_ons"]:
@@ -175,6 +179,13 @@ class Summary:
             _, _, o1  = net.predict(settings, stim[:, :, :])
             or_acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
             print("Original Train Accuracy: " + str(or_acc))
+
+        tw_rec = np.copy(var["t_w_rec"])
+        dale_mask = net.initializer["dale_mask"]
+        conn_mask = net.initializer["conn_mask"]
+        w_rec = [tw_rec,dale_mask,conn_mask]
+        data_list["w_rec"]=w_rec
+
         """Loop through ISIs"""
         
         data_list["or_acc"]=or_acc
