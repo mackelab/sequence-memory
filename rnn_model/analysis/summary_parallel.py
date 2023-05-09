@@ -121,8 +121,8 @@ class Summary:
         model_par, settings = reinstate_params(var)
         delay = int(self.summary_settings["delay_ms"]/settings['deltaT'])
         settings["delay"] = delay *self.summary_settings["upsample"]
-        if "stim_ons" in summary_settings:
-            settings["stim_ons"] = int(summary_settings["stim_ons"]*summary_settings["upsample"])
+        if "stim_ons" in self.summary_settings:
+            settings["stim_ons"] = int(self.summary_settings["stim_ons"]*self.summary_settings["upsample"])
         else:
             settings["stim_ons"] = 125        
         if self.summary_settings["randomize_onset"]:

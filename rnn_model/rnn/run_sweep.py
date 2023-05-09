@@ -1,4 +1,4 @@
-SWEEPID = "2i9d1mo3"
+SWEEPID = "qi7gdlux"
 import sys
 import os
 
@@ -43,14 +43,13 @@ def sweeper():
     Define simulation settings
     """
 
-
     n_items = 4
     n_channels = 8
     out_channels = 1
     batch_size = 128
     loss = "l2"
     gpu = "0"
-    val_perc = 0
+    val_perc = 0.15
 
     model_params = {
         "n_channels": n_channels,  # n input channels
@@ -62,7 +61,7 @@ def sweeper():
         "N": 200,  # n neurons in recurrent layer
         "P_rec": 1,  # probability of being connected in recurrent layer
         "P_in": 1,  # probability of connection between input and recurrent neurons
-        "spec_rad": 1.5,  # initial spectral radiance of recurrent layer
+        "spec_rad": 1.0,  # initial spectral radiance of recurrent layer
         "w_dist": "Gauss",  # w rec distribution, use Gauss or Gamma
         "no_autapses": False,  # no connections to self in recurrent layer
         "out_channels": out_channels,  # number of output channels
@@ -91,8 +90,8 @@ def sweeper():
         "response_ons": 0,  # response onset
         "response_dur": 40,  # response duration
         # delay
-        "delays": [20,250],  # delay lengths (using curr learning)
-        "random_delay": 0,  # randomise delay with this amount
+        "delays": [40,260],  # delay lengths (using curr learning)
+        "random_delay": 20,  # randomise delay with this amount
         "random_delay_per_tr": True,  # Randomise delay every trial, else every batch
         # training
         "learning_rate": 1e-5,  # learning rate
@@ -105,7 +104,7 @@ def sweeper():
         "eval_amp_threh": 0.7,  # amplitude threshold during response window
         "saving_freq": 100000,  # how often to save the model
         "activation": "tanh",  # activation function
-        "n_trials": 500000,  # max num of trials
+        "n_trials": 100000,  # max num of trials
         "clip_max_grad_val": 1,  # max norm for gradient clipping
         "spike_cost": 1e-5,  # l2 reg on firing rate
         "rec_weight_cost": 0,  # 1e-4, # l2 reg on recurrent weights
@@ -113,7 +112,7 @@ def sweeper():
         "out_weight_cost": 0,  # l2 reg on output weights
         "lossF": 2.04, # regularisation frequency
         "reg_LFP": True, # regularise LFP (as opposed to single units)
-        "osc_cost": 0.1, # oscillatory regularisation amount
+        "osc_cost": 0, # oscillatory regularisation amount
         "osc_reg_inh": False,  # apply regularisation only to inhibitory neurons
         "probe_gain": 1,  # put emphasis on decision period
         "loss": loss,  # which loss function to use (sce or l2)

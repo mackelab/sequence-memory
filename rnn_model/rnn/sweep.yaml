@@ -4,11 +4,11 @@ parameters:
   tau_lims:
     values: [[20,100]]
   osc_cost:
-    values: [0.1]
+    values: [0]
   lossF:
-    values: [1.5,2.04]
+    values: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
   stim_offs:
-    values: [5,30]
+    values: [20]
   learning_rate:
     values: [1e-5]
   train_w_in_scale:
