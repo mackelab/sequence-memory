@@ -18,7 +18,7 @@ summary_settings = {
     "delay_ms": 10000, # Delay time in ms
     "stim_ons":1000,
     "disable_noise": False, # With or without noise
-    "freqs_l": np.logspace(*np.log10([1, 25]), num=50), # Frequencies for spectrograms
+    "freqs_l": np.logspace(*np.log10([.33, 5]), num=50), # Frequencies for spectrograms
     "balance_trials": True, # Draw trials with balanced proportion of each stimuli
     "substr_mean_LFP": False, # Substract mean LFP
     "delay_buffer1": 25, # Disregard short period after stimulus offset
