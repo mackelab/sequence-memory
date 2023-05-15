@@ -165,8 +165,7 @@ def get_wilc_pvals(data, min_samples=30, onesided=True, common_baseline=True):
             stim_means = data[label][n][1]
 
             if common_baseline:
-
-                  # calc wilc_pval:
+                # calc wilc_pval:
                 if onesided:
                     wilc_pvals[label, n] = wilcoxon(
                         stim_means, alternative="greater"
@@ -761,24 +760,20 @@ def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
     
     """
     accs = np.zeros_like(t_delays, dtype=np.float32)
+
+    stims = draw_balanced_trials(n_trials=t_trials//2)
+    stim_ind = []
+    for i in range(len(stims[0])):
+        ind = np.argmax(np.all(np.equal(trial_gen.all_trials_arr,stims[:,i]),axis = 1))
+        stim_ind.append(ind)
+    trial_ind_match = stim_ind
+    trial_ind_non_match = stim_ind
+    settings["batch_size"] = t_trials
+
     for i, delay in enumerate(t_delays):
         print("delay " + str(delay))
         settings["delay"] = delay
-        settings["batch_size"] = t_trials
-        try:
-            trial_ind = np.random.choice(
-                np.arange(len(trial_gen.train_ind)), t_trials, replace=False
-            )
-        except:
-            print("WARNING!! : more test trials then possible unique trials selected")
-            trial_ind = np.random.choice(
-                np.arange(len(trial_gen.train_ind)), t_trials, replace=True
-            )
-
-        label = np.random.choice([0, 1], t_trials)
-        trial_ind_match = trial_ind[label == 1]
-        trial_ind_non_match = trial_ind[label == 0]
-
+       
         stim, label, delays, stim_roll, isi_stim, isi_probe = trial_gen.generate_input(
             settings,
             settings["delay"],
@@ -786,20 +781,10 @@ def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
             stim_ind_match=trial_ind_match,
             stim_ind_non_match=trial_ind_non_match,
         )
-
         stim = stim.astype(np.float64)
         T = np.shape(stim)[-1]
-        z, mask = trial_gen.generate_target(settings, label, T, delays, stim_roll)
         settings["T"] = T
-        time = np.arange(T) * settings["deltaT"] / 1000
-        plt_time = (
-            np.arange(
-                -settings["stim_ons"] + settings["rand_ons"], T - settings["stim_ons"]
-            )
-            * settings["deltaT"]
-            / 1000
-        )
-        x1, r1, o1, syn_x, syn_u = net.predict(settings, stim[:, :, :])
+        x1, r1, o1= net.predict(settings, stim[:, :, :])
         acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
         accs[i] = acc
 
