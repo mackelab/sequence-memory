@@ -7,20 +7,20 @@
 # > This means if you need 10pt - use 12.5 in Inkscape (multiply with 1.25).
 # > http://www.inkscapeforum.com/viewtopic.php?f=6&t=5964
 
-text.usetex          : False
+text.usetex          : True
 mathtext.default     : regular
-
+pdf.fonttype : 42
 font.family          : serif
-font.serif           : Arial, sans-serif
-font.sans-serif      : Arial, sans-serif
-font.cursive         : Arial, sans-serif
-font.size            : 12
-figure.titlesize     : 12
-legend.fontsize      : 12
-axes.titlesize       : 12
-axes.labelsize       : 12
-xtick.labelsize      : 12
-ytick.labelsize      : 12
+font.serif           : Helvetica, sans-serif
+font.sans-serif      : Helvetica, sans-serif
+font.cursive         : Helvetica, sans-serif
+font.size            : 8
+figure.titlesize     : 8
+legend.fontsize      : 8
+axes.titlesize       : 8
+axes.labelsize       : 8
+xtick.labelsize      : 8
+ytick.labelsize      : 8
 
 image.interpolation   : nearest
 image.resample        : False

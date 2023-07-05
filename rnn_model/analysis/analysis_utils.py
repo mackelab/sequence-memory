@@ -417,7 +417,7 @@ def avg_power(d_primes, prefered_stim, r1, stim, cwt, f, settings, t1, t2, pad=5
 
 
 def accuracy(
-    training_params, r, label, eval_delays, isi_probe, stim_roll=None, cutoff_T=0
+    training_params, r, label, eval_delays, isi_probe, stim_roll=None, cutoff_T=0, verbose=True
 ):
     """
     Calculate accuracy of model run
@@ -497,12 +497,13 @@ def accuracy(
             else:
                 if np.sum(sign == -1) > np.sum(sign == 1):
                     correct += 1
-    print(correct)
-    print("accuracy = " + str(correct / batch_size))
+    if verbose:
+        print(correct)
+        print("accuracy = " + str(correct / batch_size))
     return correct / batch_size
 
 
-def validation_accuracy(net, settings, var, trial_gen):
+def validation_accuracy(net, settings, var, trial_gen, verbose=True):
     """
     Return accuracy in validation set
     
@@ -548,13 +549,14 @@ def validation_accuracy(net, settings, var, trial_gen):
         )
         x1, r1, o1 = net.predict(settings, stim[:, :, :])
         train_acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
-        print(
-            "Val acc = "
-            + str(val_acc * 100)
-            + "% , Train acc = "
-            + str(train_acc * 100)
-            + "%"
-        )
+        if verbose:
+            print(
+                "Val acc = "
+                + str(val_acc * 100)
+                + "% , Train acc = "
+                + str(train_acc * 100)
+                + "%"
+            )
         return val_acc, train_acc
 
 
@@ -745,7 +747,7 @@ def steffiscolours():
     return pltcolors, pltcolors_alt
 
 
-def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
+def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net,verbose=True):
     """
     Accuracy for RNNs for various delay periods
     
@@ -771,7 +773,8 @@ def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
     settings["batch_size"] = t_trials
 
     for i, delay in enumerate(t_delays):
-        print("delay " + str(delay))
+        if verbose:
+            print("delay " + str(delay))
         settings["delay"] = delay
        
         stim, label, delays, stim_roll, isi_stim, isi_probe = trial_gen.generate_input(
@@ -785,7 +788,7 @@ def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
         T = np.shape(stim)[-1]
         settings["T"] = T
         x1, r1, o1= net.predict(settings, stim[:, :, :])
-        acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
+        acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll,verbose=verbose)
         accs[i] = acc
 
     return accs
