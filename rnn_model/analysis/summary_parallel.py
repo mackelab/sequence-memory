@@ -458,15 +458,15 @@ class Summary:
                 )[1]
                 vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
                 kappas[fi, neuron] = np.mean(kappa_n)
-        vex_fr_ind = np.argmax(np.sum(vex, axis=1))
-        #vex_fr_ind = np.where(np.isclose(freqs,var['lossF'][0][0]))[0][0]#np.argmax(np.sum(vex, axis=1))
-        vex_fr = self.summary_settings["freqs"][vex_fr_ind]
-        print("highest vex at fr: {:.2f}".format(vex_fr))
-        data_list["vex"]=vex
-        data_list["shvex"]=shvex
-        data_list["vex_f"]=vex_fr
-        data_list["kappas"]=kappas
-        
+            vex_fr_ind = np.argmax(np.sum(vex, axis=1))
+            #vex_fr_ind = np.where(np.isclose(freqs,var['lossF'][0][0]))[0][0]#np.argmax(np.sum(vex, axis=1))
+            vex_fr = self.summary_settings["freqs"][vex_fr_ind]
+            print("highest vex at fr: {:.2f}".format(vex_fr))
+            data_list["vex"]=vex
+            data_list["shvex"]=shvex
+            data_list["vex_f"]=vex_fr
+            data_list["kappas"]=kappas
+            
         
 
         """
@@ -541,9 +541,9 @@ class Summary:
                     low_vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
                     low_kappas[fi, neuron] = np.mean(kappa_n)
 
-            data_list["low_vex"]=low_vex
-            data_list["low_shvex"]=low_shvex
-            data_list["low_kappas"]=low_kappas
+                data_list["low_vex"]=low_vex
+                data_list["low_shvex"]=low_shvex
+                data_list["low_kappas"]=low_kappas
 
         """
         Phase order
