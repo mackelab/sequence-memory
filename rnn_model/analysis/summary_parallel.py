@@ -315,19 +315,18 @@ class Summary:
         amp = np.mean(np.array(amps),axis=0)
         data_list["post_spectrum"]=amp
         
-        if self.calc_vex:
-            for tr in range(n_trials):
+        for tr in range(n_trials):
 
-                _, amp_u = scalogram(
-                    LFP_u[:, tr] - substr_u,
-                    7,
-                    time,
-                    settings["deltaT"] / 1000,
-                    self.summary_settings["freqs_l"],
-                )
-                amps_u.append(amp_u)
-            amp_u = np.mean(np.array(amps_u),axis=0)
-            data_list["pre_spectrum"]=amp_u
+            _, amp_u = scalogram(
+                LFP_u[:, tr] - substr_u,
+                7,
+                time,
+                settings["deltaT"] / 1000,
+                self.summary_settings["freqs_l"],
+            )
+            amps_u.append(amp_u)
+        amp_u = np.mean(np.array(amps_u),axis=0)
+        data_list["pre_spectrum"]=amp_u
 
 
         main_freq = self.summary_settings["freqs_l"][np.argmax(np.mean(amp[:, delay_start:delay_end], axis=1))]
@@ -372,117 +371,36 @@ class Summary:
 
         up50th = np.arange(200)[np.logical_and(d_primes>cutoff_d, responsive)]
         low50th = np.arange(200)[np.logical_and(d_primes<cutoff_d, responsive)]
-
-
-        """
-        Calculate VEX
-
-        """
-        # freqs = np.arange(main_freq-2/3, main_freq+2/3, 1/3)#3.8
-        # freqs = np.arange(0.25, 1.5, 0.25)#3.8
-
-        t1 = delay_start + self.summary_settings["delay_buffer1"] - settings["rand_ons"]
-        t2 = delay_end - self.summary_settings["delay_buffer2"] - settings["rand_ons"]
-        delay_time = time[t1:t2]
-        for f in self.summary_settings["freqs"]:
-            if dt_sec / f < self.summary_settings["nbins"]:
-                print("Warning: too much bins for f = " + str(f))
-
-        bin_lims = np.linspace(-np.pi, np.pi, self.summary_settings["nbins"] + 1)
-        bin_centers = bin_lims[:-1] + np.pi / self.summary_settings["nbins"]
-
-
-        vex = np.zeros((len(self.summary_settings["freqs"]), N))
-        kappas = np.zeros((len(self.summary_settings["freqs"]), N))
-        shvex = np.zeros((len(self.summary_settings["freqs"]), N))
-        shuffle_ind = np.random.choice(np.arange(n_items), n_trials)
-
-        for neui, neuron in enumerate(up50th):
-
-            if neui % 10 == 0:
-                print("{:.2f}% done".format(100 * neui / len(up50th)))
-
-            pref_stim = prefered_stim[neuron]
-            pref_r, _, LFPs = extract_traces(
-                r1, stim, neuron, pref_stim, settings, True, var, self.summary_settings["onlyGaba"]
-            )
-            for fi, f in enumerate(self.summary_settings["freqs"]):
-
-                watsdat = []
-                watsw = []
-                watsw_shuffle = []
-                spikephasehist_shuffle = np.zeros((4,self.summary_settings["nbins"]))
-                counter = 0
-                cwt = complex_wavelet(timestep, f, 7)
-                kappa_n = np.zeros(4)
-                for stim_pos in range(settings["n_items"]):
-                    spikephasehist = np.zeros(self.summary_settings["nbins"])
-                    for tr in range(np.array(LFPs[stim_pos]).shape[1]):
-                        if self.summary_settings["ref_phase"] == "sine":
-                            LFP_phase = wrap(time * 2 * np.pi * f)
-                        elif self.summary_settings["ref_phase"] == "LFP":
-                            LFP_phase, _ = inst_phase(
-                                LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
-                            )
-                        else:
-                            print("WARNING: reference phase not recognised!")
-
-                        bin_ind = np.digitize(LFP_phase[t1:t2], bin_lims) - 1
-                        firing_trace = pref_r[stim_pos][t1:t2, tr]
-                        # firing_trace -= min(firing_trace)
-                        # firing_trace  /= max(firing_trace)+1e-5
-                        for b in range(self.summary_settings["nbins"]):
-                            summed_spikes = np.sum(firing_trace[bin_ind == b])
-                            occ = np.count_nonzero(bin_ind == b)
-                            if occ > 0:
-                                spikephasehist[b] += summed_spikes / occ
-                                spikephasehist_shuffle[shuffle_ind[counter], b] += (
-                                    summed_spikes / occ
-                                )
-                        counter += 1
-
-                    avg, avglen = circ_mean(bin_centers, spikephasehist)
-                    watsw.append(np.array(spikephasehist))
-                    watsdat.append(bin_centers)
-                    kappa_n[stim_pos] = kappa(bin_centers, w = spikephasehist)
-                for stim_pos in range(settings["n_items"]):
-                    watsw_shuffle.append(np.array(spikephasehist_shuffle[stim_pos]))
-
-                anovatable = watson_williams_test(
-                    bin_centers, bin_centers, bin_centers, bin_centers, w=watsw_shuffle
-                )[1]
-                shvex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
-
-                anovatable = watson_williams_test(
-                    watsdat[0], watsdat[1], watsdat[2], watsdat[3], w=watsw
-                )[1]
-                vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
-                kappas[fi, neuron] = np.mean(kappa_n)
-            vex_fr_ind = np.argmax(np.sum(vex, axis=1))
-            #vex_fr_ind = np.where(np.isclose(freqs,var['lossF'][0][0]))[0][0]#np.argmax(np.sum(vex, axis=1))
-            vex_fr = self.summary_settings["freqs"][vex_fr_ind]
-            print("highest vex at fr: {:.2f}".format(vex_fr))
-            data_list["vex"]=vex
-            data_list["shvex"]=shvex
-            data_list["vex_f"]=vex_fr
-            data_list["kappas"]=kappas
-            
-        
-
-        """
-        calculate vex low 50th
-        """            
         if self.calc_vex:
 
 
-            low_vex = np.zeros((len(self.summary_settings["freqs"]), N))
-            low_kappas = np.zeros((len(self.summary_settings["freqs"]), N))
-            low_shvex = np.zeros((len(self.summary_settings["freqs"]), N))
+            """
+            Calculate VEX
 
-            for neui, neuron in enumerate(low50th):
+            """
+            # freqs = np.arange(main_freq-2/3, main_freq+2/3, 1/3)#3.8
+            # freqs = np.arange(0.25, 1.5, 0.25)#3.8
+
+            t1 = delay_start + self.summary_settings["delay_buffer1"] - settings["rand_ons"]
+            t2 = delay_end - self.summary_settings["delay_buffer2"] - settings["rand_ons"]
+            delay_time = time[t1:t2]
+            for f in self.summary_settings["freqs"]:
+                if dt_sec / f < self.summary_settings["nbins"]:
+                    print("Warning: too much bins for f = " + str(f))
+
+            bin_lims = np.linspace(-np.pi, np.pi, self.summary_settings["nbins"] + 1)
+            bin_centers = bin_lims[:-1] + np.pi / self.summary_settings["nbins"]
+
+
+            vex = np.zeros((len(self.summary_settings["freqs"]), N))
+            kappas = np.zeros((len(self.summary_settings["freqs"]), N))
+            shvex = np.zeros((len(self.summary_settings["freqs"]), N))
+            shuffle_ind = np.random.choice(np.arange(n_items), n_trials)
+
+            for neui, neuron in enumerate(up50th):
 
                 if neui % 10 == 0:
-                    print("{:.2f}% done".format(100 * neui / len(low50th)))
+                    print("{:.2f}% done".format(100 * neui / len(up50th)))
 
                 pref_stim = prefered_stim[neuron]
                 pref_r, _, LFPs = extract_traces(
@@ -533,89 +451,169 @@ class Summary:
                     anovatable = watson_williams_test(
                         bin_centers, bin_centers, bin_centers, bin_centers, w=watsw_shuffle
                     )[1]
-                    low_shvex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
+                    shvex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
 
                     anovatable = watson_williams_test(
                         watsdat[0], watsdat[1], watsdat[2], watsdat[3], w=watsw
                     )[1]
-                    low_vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
-                    low_kappas[fi, neuron] = np.mean(kappa_n)
-
-                data_list["low_vex"]=low_vex
-                data_list["low_shvex"]=low_shvex
-                data_list["low_kappas"]=low_kappas
-
-        """
-        Phase order
-        """
-        # SUM UP ALL HISTOGRAMS
-        # AND CALCULATE PERCENTAGE MATCHING ORDER
-        #if self.calc_vex:
-        f = vex_fr
-        #else:
-        #    main_freq
-
-        # For counting Percentage matching order
-        #perms = list(set(permutations([1, 2, 3])))
-        perms= np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
-
-        n_match = np.zeros(len(perms))
-
-        # Loop through all neurons to be included
-        for neui, neuron in enumerate(up50th):
-
+                    vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
+                    kappas[fi, neuron] = np.mean(kappa_n)
+                vex_fr_ind = np.argmax(np.sum(vex, axis=1))
+                #vex_fr_ind = np.where(np.isclose(freqs,var['lossF'][0][0]))[0][0]#np.argmax(np.sum(vex, axis=1))
+                vex_fr = self.summary_settings["freqs"][vex_fr_ind]
+                print("highest vex at fr: {:.2f}".format(vex_fr))
+                data_list["vex"]=vex
+                data_list["shvex"]=shvex
+                data_list["vex_f"]=vex_fr
+                data_list["kappas"]=kappas
+                
             
-            order = np.zeros(3)
-            avgs = np.zeros(4)
-            neuronhist = np.zeros((settings["n_items"], self.summary_settings["nbins"]))
 
-            # Extract trials for prefered stimulus
-            pref_stim = prefered_stim[neuron]
-            pref_r, _, LFPs = extract_traces(
-                r1, stim, neuron, pref_stim, settings, True, var, self.summary_settings["onlyGaba"]
-            )
+            """
+            calculate vex low 50th
+            """            
+            if self.calc_vex:
+                low_vex = np.zeros((len(self.summary_settings["freqs"]), N))
+                low_kappas = np.zeros((len(self.summary_settings["freqs"]), N))
+                low_shvex = np.zeros((len(self.summary_settings["freqs"]), N))
 
-            # Calculate hist per stim position
-            for stim_pos in range(settings["n_items"]):
-                spikephasehist = np.zeros(self.summary_settings["nbins"])
+                for neui, neuron in enumerate(low50th):
 
-                # Calculate hist per trial
-                for tr in range(np.array(LFPs[stim_pos]).shape[1]):
+                    if neui % 10 == 0:
+                        print("{:.2f}% done".format(100 * neui / len(low50th)))
 
-                    if self.summary_settings["ref_phase"] == "sine":
-                        LFP_phase = wrap(time * 2 * np.pi * f)
-                    elif self.summary_settings["ref_phase"] == "LFP":
-                        LFP_phase, _ = inst_phase(
-                            LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
-                        )
-                    else:
-                        print("WARNING: reference phase not recognised!")
-                    bin_ind = np.digitize(LFP_phase[t1:t2], bin_lims) - 1
-                    firing_trace = pref_r[stim_pos][t1:t2, tr]
-                    firing_trace -= min(firing_trace)
-                    firing_trace /= max(firing_trace) + 1e-5
-                    for b in range(self.summary_settings["nbins"]):
-                        summed_spikes = np.sum(firing_trace[bin_ind == b])
+                    pref_stim = prefered_stim[neuron]
+                    pref_r, _, LFPs = extract_traces(
+                        r1, stim, neuron, pref_stim, settings, True, var, self.summary_settings["onlyGaba"]
+                    )
+                    for fi, f in enumerate(self.summary_settings["freqs"]):
 
-                        # Normalize by bin occurance
-                        occ = np.count_nonzero(bin_ind == b)
-                        if occ > 0:
-                            spikephasehist[b] += summed_spikes / occ
+                        watsdat = []
+                        watsw = []
+                        watsw_shuffle = []
+                        spikephasehist_shuffle = np.zeros((4,self.summary_settings["nbins"]))
+                        counter = 0
+                        cwt = complex_wavelet(timestep, f, 7)
+                        kappa_n = np.zeros(4)
+                        for stim_pos in range(settings["n_items"]):
+                            spikephasehist = np.zeros(self.summary_settings["nbins"])
+                            for tr in range(np.array(LFPs[stim_pos]).shape[1]):
+                                if self.summary_settings["ref_phase"] == "sine":
+                                    LFP_phase = wrap(time * 2 * np.pi * f)
+                                elif self.summary_settings["ref_phase"] == "LFP":
+                                    LFP_phase, _ = inst_phase(
+                                        LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
+                                    )
+                                else:
+                                    print("WARNING: reference phase not recognised!")
 
-                avgs[stim_pos] = circ_mean(bin_centers, np.array(spikephasehist))[0]
-                neuronhist[stim_pos] = np.array(spikephasehist)
+                                bin_ind = np.digitize(LFP_phase[t1:t2], bin_lims) - 1
+                                firing_trace = pref_r[stim_pos][t1:t2, tr]
+                                # firing_trace -= min(firing_trace)
+                                # firing_trace  /= max(firing_trace)+1e-5
+                                for b in range(self.summary_settings["nbins"]):
+                                    summed_spikes = np.sum(firing_trace[bin_ind == b])
+                                    occ = np.count_nonzero(bin_ind == b)
+                                    if occ > 0:
+                                        spikephasehist[b] += summed_spikes / occ
+                                        spikephasehist_shuffle[shuffle_ind[counter], b] += (
+                                            summed_spikes / occ
+                                        )
+                                counter += 1
 
-            # Calculate order of phases
-            phase_order = np.argsort(avgs)
+                            avg, avglen = circ_mean(bin_centers, spikephasehist)
+                            watsw.append(np.array(spikephasehist))
+                            watsdat.append(bin_centers)
+                            kappa_n[stim_pos] = kappa(bin_centers, w = spikephasehist)
+                        for stim_pos in range(settings["n_items"]):
+                            watsw_shuffle.append(np.array(spikephasehist_shuffle[stim_pos]))
 
-            # Calculate amount matching certain stim order
-            avgs -= avgs[0]
-            avgs[avgs < 0] += np.pi * 2
-            for permi, perm in enumerate(perms):
-                if (np.argsort(avgs)[1:] == np.array(perm)).all():
-                    n_match[permi] += 1
-                    #print("neuron no: " + str(neuron) + "phase order " + str(permi))
+                        anovatable = watson_williams_test(
+                            bin_centers, bin_centers, bin_centers, bin_centers, w=watsw_shuffle
+                        )[1]
+                        low_shvex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
 
-        #print("appending phase order:" + str(n_match))
-        data_list["phase_order"]=n_match
+                        anovatable = watson_williams_test(
+                            watsdat[0], watsdat[1], watsdat[2], watsdat[3], w=watsw
+                        )[1]
+                        low_vex[fi, neuron] = anovatable["SS"][0] / anovatable["SS"][2]
+                        low_kappas[fi, neuron] = np.mean(kappa_n)
+
+                    data_list["low_vex"]=low_vex
+                    data_list["low_shvex"]=low_shvex
+                    data_list["low_kappas"]=low_kappas
+
+            """
+            Phase order
+            """
+            # SUM UP ALL HISTOGRAMS
+            # AND CALCULATE PERCENTAGE MATCHING ORDER
+            if self.calc_vex:
+                f = vex_fr
+            else:
+                main_freq
+
+            # For counting Percentage matching order
+            #perms = list(set(permutations([1, 2, 3])))
+            perms= np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
+
+            n_match = np.zeros(len(perms))
+
+            # Loop through all neurons to be included
+            for neui, neuron in enumerate(up50th):
+
+                
+                order = np.zeros(3)
+                avgs = np.zeros(4)
+                neuronhist = np.zeros((settings["n_items"], self.summary_settings["nbins"]))
+
+                # Extract trials for prefered stimulus
+                pref_stim = prefered_stim[neuron]
+                pref_r, _, LFPs = extract_traces(
+                    r1, stim, neuron, pref_stim, settings, True, var, self.summary_settings["onlyGaba"]
+                )
+
+                # Calculate hist per stim position
+                for stim_pos in range(settings["n_items"]):
+                    spikephasehist = np.zeros(self.summary_settings["nbins"])
+
+                    # Calculate hist per trial
+                    for tr in range(np.array(LFPs[stim_pos]).shape[1]):
+
+                        if self.summary_settings["ref_phase"] == "sine":
+                            LFP_phase = wrap(time * 2 * np.pi * f)
+                        elif self.summary_settings["ref_phase"] == "LFP":
+                            LFP_phase, _ = inst_phase(
+                                LFPs[stim_pos][:, tr], cwt, time, f, ref_phase=False
+                            )
+                        else:
+                            print("WARNING: reference phase not recognised!")
+                        bin_ind = np.digitize(LFP_phase[t1:t2], bin_lims) - 1
+                        firing_trace = pref_r[stim_pos][t1:t2, tr]
+                        firing_trace -= min(firing_trace)
+                        firing_trace /= max(firing_trace) + 1e-5
+                        for b in range(self.summary_settings["nbins"]):
+                            summed_spikes = np.sum(firing_trace[bin_ind == b])
+
+                            # Normalize by bin occurance
+                            occ = np.count_nonzero(bin_ind == b)
+                            if occ > 0:
+                                spikephasehist[b] += summed_spikes / occ
+
+                    avgs[stim_pos] = circ_mean(bin_centers, np.array(spikephasehist))[0]
+                    neuronhist[stim_pos] = np.array(spikephasehist)
+
+                # Calculate order of phases
+                phase_order = np.argsort(avgs)
+
+                # Calculate amount matching certain stim order
+                avgs -= avgs[0]
+                avgs[avgs < 0] += np.pi * 2
+                for permi, perm in enumerate(perms):
+                    if (np.argsort(avgs)[1:] == np.array(perm)).all():
+                        n_match[permi] += 1
+                        #print("neuron no: " + str(neuron) + "phase order " + str(permi))
+
+            #print("appending phase order:" + str(n_match))
+            data_list["phase_order"]=n_match
         return data_list
