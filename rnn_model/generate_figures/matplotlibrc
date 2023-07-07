@@ -10,7 +10,7 @@
 text.usetex          : True
 mathtext.default     : regular
 pdf.fonttype : 42
-font.family          : serif
+font.family          : Helvetica
 font.serif           : Helvetica, sans-serif
 font.sans-serif      : Helvetica, sans-serif
 font.cursive         : Helvetica, sans-serif
