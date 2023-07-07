@@ -18,7 +18,7 @@ summary_settings = {
     "delay_ms": 10000, # Delay time in ms
     "stim_ons":1000,
     "disable_noise": False, # With or without noise
-    "freqs_l": np.logspace(*np.log10([.33, 5]), num=50), # Frequencies for spectrograms
+    "freqs_l": np.logspace(*np.log10([.33, 5]), num=60), # Frequencies for spectrograms
     "balance_trials": True, # Draw trials with balanced proportion of each stimuli
     "substr_mean_LFP": False, # Substract mean LFP
     "delay_buffer1": 25, # Disregard short period after stimulus offset
@@ -33,12 +33,11 @@ Sum_obj = Summary()
 
 
 if str(os.popen("hostname").read()) == "Matthijss-MacBook-Air\n":
-    data_dir = "../data/"+str(task_dir)
-    model_dir = os.path.join(base_dir, "..", "models/sweep_suppb")
+    data_dir = "/Users/matthijs/sequence-memory/rnn_model/data/"+str(task_dir)
+    model_dir = "/Users/matthijs/sequence-memory/rnn_model/models/sweep_main"
     
 else:
-    data_dir = (
-        "/mnt/qb/work/macke/mpals85/ISI_data/"+str(task_dir)
-    )
+    data_dir = "/mnt/qb/work/macke/mpals85/ISI_data/"+str(task_dir)
     model_dir = "/home/macke/mpals85/sequence-memory/rnn_model/models/sweep_main"
-data_list, summary_settings = Sum_obj.run_summary(summary_settings, model_dir, data_dir,n_jobs=6, calc_vex=calc_vex)
+    
+data_list, summary_settings = Sum_obj.run_summary(summary_settings, model_dir, data_dir,n_jobs=1, calc_vex=calc_vex)
