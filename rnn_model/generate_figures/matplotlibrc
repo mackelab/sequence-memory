@@ -7,7 +7,7 @@
 # > This means if you need 10pt - use 12.5 in Inkscape (multiply with 1.25).
 # > http://www.inkscapeforum.com/viewtopic.php?f=6&t=5964
 
-text.usetex          : True
+text.usetex          : False
 mathtext.default     : regular
 pdf.fonttype : 42
 font.family          : Helvetica
