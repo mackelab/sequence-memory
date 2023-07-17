@@ -5,7 +5,7 @@ sys.path.append(file_dir+ "/..")
 from analysis.summary_parallel import Summary
 import numpy as np
 base_dir = ""
-task_dir = "datasweep_main_long_osc.pkl"
+task_dir = "datasweep_main_long_lfp.pkl"
 calc_vex=False
 summary_settings = {
     "upsample" : 1, # Increase temporal resolution

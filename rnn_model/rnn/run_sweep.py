@@ -1,4 +1,4 @@
-SWEEPID = "qi7gdlux"
+SWEEPID = "az8vlt9o"
 import sys
 import os
 
@@ -32,7 +32,7 @@ def sweeper():
         gpu_frac = 0
     else:
         out_dir = (
-            "/mnt/qb/work/macke/mpals85/ISI_Sweep"
+            "/mnt/qb/work/macke/mpals85/Rdelay_Sweep"
         )
         gpu_frac = 0.7
 
@@ -49,7 +49,7 @@ def sweeper():
     batch_size = 128
     loss = "l2"
     gpu = "0"
-    val_perc = 0.15
+    val_perc = 0.10
 
     model_params = {
         "n_channels": n_channels,  # n input channels
@@ -61,7 +61,7 @@ def sweeper():
         "N": 200,  # n neurons in recurrent layer
         "P_rec": 1,  # probability of being connected in recurrent layer
         "P_in": 1,  # probability of connection between input and recurrent neurons
-        "spec_rad": 1.0,  # initial spectral radiance of recurrent layer
+        "spec_rad": 1.5,  # initial spectral radiance of recurrent layer
         "w_dist": "Gauss",  # w rec distribution, use Gauss or Gamma
         "no_autapses": False,  # no connections to self in recurrent layer
         "out_channels": out_channels,  # number of output channels
@@ -104,7 +104,7 @@ def sweeper():
         "eval_amp_threh": 0.7,  # amplitude threshold during response window
         "saving_freq": 100000,  # how often to save the model
         "activation": "tanh",  # activation function
-        "n_trials": 100000,  # max num of trials
+        "n_trials": 500000,  # max num of trials
         "clip_max_grad_val": 1,  # max norm for gradient clipping
         "spike_cost": 1e-5,  # l2 reg on firing rate
         "rec_weight_cost": 0,  # 1e-4, # l2 reg on recurrent weights
@@ -112,7 +112,7 @@ def sweeper():
         "out_weight_cost": 0,  # l2 reg on output weights
         "lossF": 2.04, # regularisation frequency
         "reg_LFP": True, # regularise LFP (as opposed to single units)
-        "osc_cost": 0, # oscillatory regularisation amount
+        "osc_cost": 0.1, # oscillatory regularisation amount
         "osc_reg_inh": False,  # apply regularisation only to inhibitory neurons
         "probe_gain": 1,  # put emphasis on decision period
         "loss": loss,  # which loss function to use (sce or l2)
@@ -154,7 +154,8 @@ def sweeper():
     )
     print("initialized trial gen")
     name = (
-        "SpecRad"
+        SWEEPID
+        + "SpecRad"
         + str(model_params["spec_rad"])
         + "Dale"
         + str(model_params["apply_dale"])

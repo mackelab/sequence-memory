@@ -41,7 +41,7 @@ class Summary:
         files_and_directories = os.listdir(model_dir)
 
         for fi, file in enumerate(files_and_directories):
-            if file[0]=='.':
+            if file[:2]=='.D':
                 print("removing: " +str(file))
                 files_and_directories.pop(fi)
 
