@@ -97,8 +97,9 @@ def extract_stim_trig_act(
     t1 = baseline_start
     t2 = baseline_start + baseline_len
     for trial in range(n_trials):
-        r1[:, :, trial] = np.roll(r1[:, :, trial], -stim_roll[trial], axis=0)
-        stim[:, trial] = np.roll(stim[:, trial], -stim_roll[trial], axis=1)
+        if stim_roll[trial] > 0:
+            r1[:, :, trial] = np.roll(r1[:, :, trial], -stim_roll[trial], axis=0)
+            stim[:, trial] = np.roll(stim[:, trial], -stim_roll[trial], axis=1)
     r1 = r1[settings["rand_ons"] :]
     stim = stim[:, :, settings["rand_ons"] :]
     # normalize

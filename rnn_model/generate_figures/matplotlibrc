@@ -9,7 +9,8 @@
 
 text.usetex          : False
 mathtext.default     : regular
-pdf.fonttype : 42
+pdf.fonttype         : 42
+ps.fonttype          : 42
 font.family          : Helvetica
 font.serif           : Helvetica, sans-serif
 font.sans-serif      : Helvetica, sans-serif
