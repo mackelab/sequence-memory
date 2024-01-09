@@ -16,7 +16,9 @@ import pickle
 from joblib import Parallel, delayed
 
 class Summary:
-
+    """
+    Summary statistics with supports for running multiple jobs in parallel
+    """
     def __init__(self):
         pass
 
@@ -29,9 +31,11 @@ class Summary:
             summary_settings: dictionary of settings to use
             model_dir: String denoting folder with models
             data_dir: String denoting folder to store the result of this function
+            n_jobs: Number of jobs to run in parallel
+            calc_vex: Boolean, whether to calculate vex or not (takes a long time)
 
         Returns:
-            data_list: Dictionary with summary statistics
+            results: list containting dictionaries with summary statistics
             summary_settings: dictionary of used settings
         
         """
@@ -53,7 +57,6 @@ class Summary:
             return result, summary_settings
         
         filesandIsis = [[fname,isi] for fname in files_and_directories for isi in summary_settings['ISIs']]
-        #print(filesandIsis)
         self.results = Parallel(n_jobs=n_jobs)(delayed(self.run_summary_one_model)(fnameISI) 
                                     for fnameISI in filesandIsis)
 
@@ -66,10 +69,13 @@ class Summary:
         with open(data_dir, "wb") as fp:   #Pickling
             pickle.dump(savedict, fp)
         return self.results, summary_settings
-        #for findex, fname in enumerate(files_and_directories):
 
 
     def run_summary_one_model(self, fnameISI):
+
+        """
+        Function to calculate summary statistics for one model
+        """
 
         data_list = {
         "model_names":[],
@@ -139,8 +145,6 @@ class Summary:
         settings["batch_size"] = self.summary_settings["n_trials"]        
         n_trials = self.summary_settings["n_trials"]  
         upsample_time(self.summary_settings["upsample"], settings)
-
-
 
 
         """ACC with original ISI"""
@@ -378,9 +382,7 @@ class Summary:
             Calculate VEX
 
             """
-            # freqs = np.arange(main_freq-2/3, main_freq+2/3, 1/3)#3.8
-            # freqs = np.arange(0.25, 1.5, 0.25)#3.8
-
+      
             t1 = delay_start + self.summary_settings["delay_buffer1"] - settings["rand_ons"]
             t2 = delay_end - self.summary_settings["delay_buffer2"] - settings["rand_ons"]
             delay_time = time[t1:t2]
@@ -554,7 +556,6 @@ class Summary:
                 main_freq
 
             # For counting Percentage matching order
-            #perms = list(set(permutations([1, 2, 3])))
             perms= np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
 
             n_match = np.zeros(len(perms))
@@ -612,8 +613,6 @@ class Summary:
                 for permi, perm in enumerate(perms):
                     if (np.argsort(avgs)[1:] == np.array(perm)).all():
                         n_match[permi] += 1
-                        #print("neuron no: " + str(neuron) + "phase order " + str(permi))
 
-            #print("appending phase order:" + str(n_match))
             data_list["phase_order"]=n_match
         return data_list

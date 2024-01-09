@@ -29,8 +29,8 @@ Define simulation settings
 """
 
 # Each time step is 10 ms (changeable)
-n_items = 2
-n_channels = 2
+n_items = 4
+n_channels = 8
 out_channels = 1
 batch_size = 128
 loss = "l2"
@@ -41,10 +41,10 @@ val_perc = 0
 
 model_params = {
     "n_channels": n_channels,  # n input channels
-    "apply_dale": False,  # make network inhibitory-excitory
+    "apply_dale": True,  # make network inhibitory-excitory
     "balance_DL": True,  # keep expectation of neuron input 0 after applying Dale's Law
-    "rm_outlier_DL": True,  # Remove outliers in eigenspectrym by enforcing J 1 = 0
-    "spectr_norm": True,  # keep spectral norm to spec_rad by normalisation
+    "rm_outlier_DL": False,  # Remove outliers in eigenspectrym by enforcing J 1 = 0
+    "spectr_norm": False,  # keep spectral norm to spec_rad by normalisation
     "P_inh": 0.2,  # proportion of inhibitory neurons
     "N": 200,  # n neurons in recurrent layer
     "P_rec": 1,  # probability of being connected in recurrent layer
@@ -78,7 +78,7 @@ training_params = {
     "response_ons": 0,  # response onset
     "response_dur": 40,  # response duration
     # delay
-    "delays": [25,150],  # delay lengths (using curr learning)
+    "delays": [25,250],  # delay lengths (using curr learning)
     "random_delay": 0,  # randomise delay with this amount
     "random_delay_per_tr": True,  # Randomise delay every trial, else every batch
 
@@ -91,15 +91,15 @@ training_params = {
     "eval_freq": 10,  # how often to evaluate task perf
     "eval_tr": int(np.ceil(100 / batch_size)),  # number of trials for eval
     "eval_amp_threh": 0.7,  # amplitude threshold during response window
-    "saving_freq": 50,  # how often to save the model
+    "saving_freq": 10000,  # how often to save the model
     "activation": "tanh",  # activation function
-    "n_trials": 300000,  # max num of trials
+    "n_trials": 30000,  # max num of trials
     "clip_max_grad_val": 1,  # max norm for gradient clipping
-    "spike_cost": 1e-5,  # l2 reg on firing rate
+    "spike_cost": 5e-5,  # l2 reg on firing rate
     "rec_weight_cost": 0,  # 1e-4, # l2 reg on recurrent weights
     "in_weight_cost": 0,  # l2 reg on recurrent weights
     "out_weight_cost": 0,  # l2 reg on output weights
-    "lossF": 3.5, # regularisation frequency
+    "lossF": 2.04, # regularisation frequency
     "reg_LFP": True, # regularise LFP (as opposed to single units)
     "osc_cost": 0.1, # oscillatory regularisation amount
     "osc_reg_inh": False,  # apply regularisation only to inhibitory neurons

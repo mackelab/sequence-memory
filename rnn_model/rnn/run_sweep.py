@@ -11,6 +11,7 @@ import numpy as np
 import wandb
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
+
 # Import the continuous rate model
 from model import RNN
 
@@ -26,15 +27,9 @@ def sweeper():
 
 
     #Set up the output dir where the output model will be saved
-    # check if on cluster or workstation
-    if str(os.popen("hostname").read()) == "Matthijss-MacBook-Air\n":
-        out_dir = "/Users/matthijs/sequence-memory/rnn_model/models/sweep_main"
-        gpu_frac = 0
-    else:
-        out_dir = (
-            "/mnt/qb/work/macke/mpals85/Rdelay_Sweep"
-        )
-        gpu_frac = 0.7
+    out_dir = os.path.join(os.getcwd(), "models")
+
+    gpu_frac = 0.7
 
     if os.path.exists(out_dir) == False:
         os.makedirs(out_dir)

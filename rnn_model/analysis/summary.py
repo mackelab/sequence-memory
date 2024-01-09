@@ -21,6 +21,7 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
         summary_settings: dictionary of settings to use
         model_dir: String denoting folder with models
         data_dir: String denoting folder to store the result of this function
+        vex: Boolean, whether to calculate VEX or not (takes a lot of time)
 
     Returns:
         data_list: Dictionary with summary statistics
@@ -517,12 +518,7 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                 f= np.argmax(np.mean(amp,axis=1))
     
 
-            # Initialize histograms
-            #totalhist_stim = np.zeros((settings["n_items"],summary_settings["nbins"]))
-            #totalhist_phase = np.zeros((settings["n_items"], summary_settings["nbins"]))
-
             # For counting Percentage matching order
-            #perms = list(set(permutations([1, 2, 3])))
             perms= np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
 
             n_match = np.zeros(len(perms))
@@ -571,8 +567,6 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                     avgs[stim_pos] = circ_mean(bin_centers, np.array(spikephasehist))[0]
                     neuronhist[stim_pos] = np.array(spikephasehist)
 
-                ## Calculate order of phases
-                #phase_order = np.argsort(avgs)
 
                 # Calculate amount matching certain stim order
                 avgs -= avgs[0]
@@ -580,9 +574,6 @@ def run_summary(summary_settings, model_dir, data_dir,vex=True):
                 for permi, perm in enumerate(perms):
                     if (np.argsort(avgs)[1:] == np.array(perm)).all():
                         n_match[permi] += 1
-                        #print("neuron no: " + str(neuron) + "phase order " + str(permi))
-
-            #print("appending phase order:" + str(n_match))
             data_list["phase_order"].append(n_match)
 
 

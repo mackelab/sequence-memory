@@ -9,53 +9,7 @@ import copy
 import matplotlib.collections as mcoll
 from tf_utils import *
 import pickle
-def old_to_new_perm_inds(i):
-    if i ==0:
-        return 1
-    elif i ==1:
-        return 4
-    elif i ==2:
-        return 5
-    elif i ==3:
-        return 2
-    elif i ==4:
-        return 0
-    elif i ==5:
-        return 3
-    else:
-        print("IND should be between 0 and 5")
-        
-def new_to_old_perm_inds(i):
-    if i ==0:
-        return 4
-    elif i ==1:
-        return 0
-    elif i ==2:
-        return 3
-    elif i ==3:
-        return 5
-    elif i ==4:
-        return 1
-    elif i ==5:
-        return 2
-    else:
-        print("IND should be between 0 and 5")
-            
-def get_phase_order(freq,isi):
-    data = pickle.load(open("../data/order_pred.pkl",'rb'))    
-    freqs = data['freqs']
-    isis = data['isis']
-    result = data['result']
-    i = arg_is_close(freqs,freq)
-    j = arg_is_close(isis,isi-200)
-    r = int(result[j,i])
-    orders = np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
-    return r,orders[r]
 
-def arg_is_close(array, value):
-    """Returns index of closest value in array"""
-    idx = np.argmin(np.abs(array - value))
-    return idx
 
 def extract_stim_trig_act(
     r1o,
@@ -879,6 +833,9 @@ def draw_balanced_trials(n_channels=8, n_stim=4,n_trials = 112, max_iter = 10000
 
 
 def copy_untrained(net, var):
+    """
+    Copy untrained network
+    """
     untrained_net = copy.deepcopy(net)
     untrained_net.initializer["w_in"] = var['pre_training_state']['w_in'][0][0]
     untrained_net.initializer["w_in_scale"] = var['pre_training_state']['w_in_scale'][0][0]
@@ -890,3 +847,61 @@ def copy_untrained(net, var):
     return untrained_net
 
 
+
+def get_phase_order(freq,isi):
+    """
+    Get phase order prediction based on frequency and ISI
+    """
+    data = pickle.load(open("../data/order_pred.pkl",'rb'))    
+    freqs = data['freqs']
+    isis = data['isis']
+    result = data['result']
+    i = arg_is_close(freqs,freq)
+    j = arg_is_close(isis,isi-200)
+    r = int(result[j,i])
+    orders = np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
+    return r,orders[r]
+
+def arg_is_close(array, value):
+    """Returns index of closest value in array"""
+    idx = np.argmin(np.abs(array - value))
+    return idx
+
+def old_to_new_perm_inds(i):
+    """
+    utility function between two conventions of permutation indices 
+    """
+    if i ==0:
+        return 1
+    elif i ==1:
+        return 4
+    elif i ==2:
+        return 5
+    elif i ==3:
+        return 2
+    elif i ==4:
+        return 0
+    elif i ==5:
+        return 3
+    else:
+        print("IND should be between 0 and 5")
+        
+def new_to_old_perm_inds(i):
+    """
+    utility function between two conventions of permutation indices 
+    """
+    if i ==0:
+        return 4
+    elif i ==1:
+        return 0
+    elif i ==2:
+        return 3
+    elif i ==3:
+        return 5
+    elif i ==4:
+        return 1
+    elif i ==5:
+        return 2
+    else:
+        print("IND should be between 0 and 5")
+            
