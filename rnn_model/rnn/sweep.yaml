@@ -6,7 +6,9 @@ parameters:
   osc_cost:
     values: [0.1]
   lossF:
-    values: [1.5, 2.04, 2.75, 3.73]
+    values: [1.5,2.04,2.75,3.74]
+  stim_offs:
+    values: [20]
   learning_rate:
     values: [1e-5]
   train_w_in_scale:

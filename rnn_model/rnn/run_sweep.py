@@ -1,4 +1,4 @@
-SWEEPID = "ydk3it3y"
+SWEEPID = "az8vlt9o"
 import sys
 import os
 
@@ -11,6 +11,7 @@ import numpy as np
 import wandb
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
+
 # Import the continuous rate model
 from model import RNN
 
@@ -26,16 +27,9 @@ def sweeper():
 
 
     #Set up the output dir where the output model will be saved
-    # check if on cluster or workstation
-    if str(os.popen("hostname").read()) == "MackeLabTaichi\n":
-        out_dir = os.path.join(os.getcwd(), "models/sweepWandB")
-        gpu_frac = 0.7
+    out_dir = os.path.join(os.getcwd(), "models")
 
-    else:
-        out_dir = (
-            "/mnt/qb/work/macke/mpals85/data"
-        )
-        gpu_frac = 0.7
+    gpu_frac = 0.7
 
     if os.path.exists(out_dir) == False:
         os.makedirs(out_dir)
@@ -44,14 +38,13 @@ def sweeper():
     Define simulation settings
     """
 
-
     n_items = 4
     n_channels = 8
     out_channels = 1
     batch_size = 128
     loss = "l2"
     gpu = "0"
-    val_perc = 0
+    val_perc = 0.10
 
     model_params = {
         "n_channels": n_channels,  # n input channels
@@ -92,7 +85,7 @@ def sweeper():
         "response_ons": 0,  # response onset
         "response_dur": 40,  # response duration
         # delay
-        "delays": [20,260],  # delay lengths (using curr learning)
+        "delays": [40,260],  # delay lengths (using curr learning)
         "random_delay": 20,  # randomise delay with this amount
         "random_delay_per_tr": True,  # Randomise delay every trial, else every batch
         # training
@@ -114,7 +107,7 @@ def sweeper():
         "out_weight_cost": 0,  # l2 reg on output weights
         "lossF": 2.04, # regularisation frequency
         "reg_LFP": True, # regularise LFP (as opposed to single units)
-        "osc_cost": 0.5, # oscillatory regularisation amount
+        "osc_cost": 0.1, # oscillatory regularisation amount
         "osc_reg_inh": False,  # apply regularisation only to inhibitory neurons
         "probe_gain": 1,  # put emphasis on decision period
         "loss": loss,  # which loss function to use (sce or l2)
@@ -156,7 +149,8 @@ def sweeper():
     )
     print("initialized trial gen")
     name = (
-        "SpecRad"
+        SWEEPID
+        + "SpecRad"
         + str(model_params["spec_rad"])
         + "Dale"
         + str(model_params["apply_dale"])

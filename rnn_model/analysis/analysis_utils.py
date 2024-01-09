@@ -8,6 +8,7 @@ sys.path.append(file_dir)
 import copy
 import matplotlib.collections as mcoll
 from tf_utils import *
+import pickle
 
 
 def extract_stim_trig_act(
@@ -50,8 +51,9 @@ def extract_stim_trig_act(
     t1 = baseline_start
     t2 = baseline_start + baseline_len
     for trial in range(n_trials):
-        r1[:, :, trial] = np.roll(r1[:, :, trial], -stim_roll[trial], axis=0)
-        stim[:, trial] = np.roll(stim[:, trial], -stim_roll[trial], axis=1)
+        if stim_roll[trial] > 0:
+            r1[:, :, trial] = np.roll(r1[:, :, trial], -stim_roll[trial], axis=0)
+            stim[:, trial] = np.roll(stim[:, trial], -stim_roll[trial], axis=1)
     r1 = r1[settings["rand_ons"] :]
     stim = stim[:, :, settings["rand_ons"] :]
     # normalize
@@ -118,8 +120,7 @@ def get_wilc_pvals(data, min_samples=30, onesided=True, common_baseline=True):
             stim_means = data[label][n][1]
 
             if common_baseline:
-
-                  # calc wilc_pval:
+                # calc wilc_pval:
                 if onesided:
                     wilc_pvals[label, n] = wilcoxon(
                         stim_means, alternative="greater"
@@ -371,7 +372,7 @@ def avg_power(d_primes, prefered_stim, r1, stim, cwt, f, settings, t1, t2, pad=5
 
 
 def accuracy(
-    training_params, r, label, eval_delays, isi_probe, stim_roll=None, cutoff_T=0
+    training_params, r, label, eval_delays, isi_probe, stim_roll=None, cutoff_T=0, verbose=True
 ):
     """
     Calculate accuracy of model run
@@ -451,12 +452,13 @@ def accuracy(
             else:
                 if np.sum(sign == -1) > np.sum(sign == 1):
                     correct += 1
-    print(correct)
-    print("accuracy = " + str(correct / batch_size))
+    if verbose:
+        print(correct)
+        print("accuracy = " + str(correct / batch_size))
     return correct / batch_size
 
 
-def validation_accuracy(net, settings, var, trial_gen):
+def validation_accuracy(net, settings, var, trial_gen, verbose=True):
     """
     Return accuracy in validation set
     
@@ -502,13 +504,14 @@ def validation_accuracy(net, settings, var, trial_gen):
         )
         x1, r1, o1 = net.predict(settings, stim[:, :, :])
         train_acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
-        print(
-            "Val acc = "
-            + str(val_acc * 100)
-            + "% , Train acc = "
-            + str(train_acc * 100)
-            + "%"
-        )
+        if verbose:
+            print(
+                "Val acc = "
+                + str(val_acc * 100)
+                + "% , Train acc = "
+                + str(train_acc * 100)
+                + "%"
+            )
         return val_acc, train_acc
 
 
@@ -699,7 +702,7 @@ def steffiscolours():
     return pltcolors, pltcolors_alt
 
 
-def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
+def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net,verbose=True):
     """
     Accuracy for RNNs for various delay periods
     
@@ -714,24 +717,21 @@ def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
     
     """
     accs = np.zeros_like(t_delays, dtype=np.float32)
+
+    stims = draw_balanced_trials(n_trials=t_trials//2)
+    stim_ind = []
+    for i in range(len(stims[0])):
+        ind = np.argmax(np.all(np.equal(trial_gen.all_trials_arr,stims[:,i]),axis = 1))
+        stim_ind.append(ind)
+    trial_ind_match = stim_ind
+    trial_ind_non_match = stim_ind
+    settings["batch_size"] = t_trials
+
     for i, delay in enumerate(t_delays):
-        print("delay " + str(delay))
+        if verbose:
+            print("delay " + str(delay))
         settings["delay"] = delay
-        settings["batch_size"] = t_trials
-        try:
-            trial_ind = np.random.choice(
-                np.arange(len(trial_gen.train_ind)), t_trials, replace=False
-            )
-        except:
-            print("WARNING!! : more test trials then possible unique trials selected")
-            trial_ind = np.random.choice(
-                np.arange(len(trial_gen.train_ind)), t_trials, replace=True
-            )
-
-        label = np.random.choice([0, 1], t_trials)
-        trial_ind_match = trial_ind[label == 1]
-        trial_ind_non_match = trial_ind[label == 0]
-
+       
         stim, label, delays, stim_roll, isi_stim, isi_probe = trial_gen.generate_input(
             settings,
             settings["delay"],
@@ -739,21 +739,11 @@ def extrapolate_delays(t_trials, t_delays, settings, trial_gen, net):
             stim_ind_match=trial_ind_match,
             stim_ind_non_match=trial_ind_non_match,
         )
-
         stim = stim.astype(np.float64)
         T = np.shape(stim)[-1]
-        z, mask = trial_gen.generate_target(settings, label, T, delays, stim_roll)
         settings["T"] = T
-        time = np.arange(T) * settings["deltaT"] / 1000
-        plt_time = (
-            np.arange(
-                -settings["stim_ons"] + settings["rand_ons"], T - settings["stim_ons"]
-            )
-            * settings["deltaT"]
-            / 1000
-        )
-        x1, r1, o1, syn_x, syn_u = net.predict(settings, stim[:, :, :])
-        acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll)
+        x1, r1, o1= net.predict(settings, stim[:, :, :])
+        acc = accuracy(settings, o1, label, delays, isi_probe, stim_roll,verbose=verbose)
         accs[i] = acc
 
     return accs
@@ -843,6 +833,9 @@ def draw_balanced_trials(n_channels=8, n_stim=4,n_trials = 112, max_iter = 10000
 
 
 def copy_untrained(net, var):
+    """
+    Copy untrained network
+    """
     untrained_net = copy.deepcopy(net)
     untrained_net.initializer["w_in"] = var['pre_training_state']['w_in'][0][0]
     untrained_net.initializer["w_in_scale"] = var['pre_training_state']['w_in_scale'][0][0]
@@ -854,3 +847,61 @@ def copy_untrained(net, var):
     return untrained_net
 
 
+
+def get_phase_order(freq,isi):
+    """
+    Get phase order prediction based on frequency and ISI
+    """
+    data = pickle.load(open("../data/order_pred.pkl",'rb'))    
+    freqs = data['freqs']
+    isis = data['isis']
+    result = data['result']
+    i = arg_is_close(freqs,freq)
+    j = arg_is_close(isis,isi-200)
+    r = int(result[j,i])
+    orders = np.array([[3,1,2],[1,3,2],[3,2,1],[2,3,1],[1,2,3],[2,1,3]])
+    return r,orders[r]
+
+def arg_is_close(array, value):
+    """Returns index of closest value in array"""
+    idx = np.argmin(np.abs(array - value))
+    return idx
+
+def old_to_new_perm_inds(i):
+    """
+    utility function between two conventions of permutation indices 
+    """
+    if i ==0:
+        return 1
+    elif i ==1:
+        return 4
+    elif i ==2:
+        return 5
+    elif i ==3:
+        return 2
+    elif i ==4:
+        return 0
+    elif i ==5:
+        return 3
+    else:
+        print("IND should be between 0 and 5")
+        
+def new_to_old_perm_inds(i):
+    """
+    utility function between two conventions of permutation indices 
+    """
+    if i ==0:
+        return 4
+    elif i ==1:
+        return 0
+    elif i ==2:
+        return 3
+    elif i ==3:
+        return 5
+    elif i ==4:
+        return 1
+    elif i ==5:
+        return 2
+    else:
+        print("IND should be between 0 and 5")
+            

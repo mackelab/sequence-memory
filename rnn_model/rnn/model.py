@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0,'..')
 sys.path.append(os.getcwd())
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
 sys.path.append(file_dir+"/..")
@@ -13,6 +13,7 @@ import scipy.io
 import datetime
 import time
 import wandb
+from joblib import Parallel, delayed
 
 
 """
@@ -20,7 +21,8 @@ Recurrent neural network class
 """
 class RNN:
     def __init__(self):
-        pass
+       print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+       tf.disable_eager_execution()
 
     def initialize_model(self, model_params): 
         """
@@ -121,6 +123,7 @@ class RNN:
             + str(np.max(abs(np.linalg.eigvals(dale_mask.dot(w_rec) * conn_mask))))
         )
         self.initializer["w_in_scale"] = 1.0
+        self.initializer["w_out_scale"] = 1.0
 
         # add recurrent weights to dictionary
         self.initializer["w_rec"] = np.float32(w_rec)
@@ -413,7 +416,7 @@ class RNN:
         LFPt = tf.stack(LFP[t1:t2])
         LFPt = tf.reduce_mean(LFPt, axis=1) #take mean input current over neurons
         x_u, x_var = tf.nn.moments(LFPt, [0])  # mean and var over time axis
-        x_z = (LFPt - x_u) / (tf.math.sqrt(2 * x_var + 1e-10))
+        x_z = (LFPt - x_u) / (tf.math.sqrt(2 * x_var + 1e-10))[t1:t2]
         tstep = training_params["deltaT"] / 1000
 
         
@@ -491,11 +494,12 @@ class RNN:
         """
         self.sync_wandb = sync_wandb
         if sync_wandb:
-            wandb.init(
-                project="phase-coding",
-                group="osc_driven_sweep",
-                config={**model_params, **training_params},
-            )  # , reinit=True)
+            if new_run:
+                wandb.init(
+                    project="phase-coding",
+                    group="osc_driven_sweep",
+                    config={**model_params, **training_params},
+                )  # , reinit=True)
             config = wandb.config
 
             """overwrite config with sweep params"""
@@ -509,8 +513,8 @@ class RNN:
             training_params["tau_lims"] = config.tau_lims
             training_params["learning_rate"] = config.learning_rate     
             training_params["train_w_in_scale"] = config.train_w_in_scale
-
-
+            training_params["stim_offs"] = config.stim_offs
+            training_params["probe_offs"] = config.stim_offs
         self.activation = training_params["activation"]
 
         # Transfer function options
@@ -545,7 +549,9 @@ class RNN:
 
         # make dictionary of initial states
         self.pre_train_state = self.initializer.copy()
-
+        print("OFFSET DURATIONS:")
+        print(training_params["stim_offs"], training_params["probe_offs"])
+        print("\n")
         # loop through all delays (curriculum learning)
         for delay in training_params["delays"]:
             print(delay)

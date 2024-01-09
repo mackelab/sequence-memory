@@ -4,3 +4,5 @@
 
 To train an RNN model, install the conda environment: 
 ```conda env create -f sequence.yml```, activate it and run ``` python rnn_model/rnn/run_single_model.py```
+
+To retrieve the model files and generate the paper figures, one needs [git lfs](https://git-lfs.com/) installed.
