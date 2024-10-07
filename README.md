@@ -33,5 +33,5 @@ rnn_model/rnn/run_summary.py
 Either-way, the figures can then be recreated by running the notebooks in: `rnn_model/generate_figures`.
 
 ### Note
-Code tested on a Ubuntu system with package versions given in the `environment.yml` file
+Code tested on a Ubuntu system with package versions given in the `sequence.yml` file
 
