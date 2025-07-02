@@ -1,5 +1,5 @@
 ### Code for Phase of firing does not reflect temporal order in sequence memory of humans and recurrent neural networks
-[Link to preprint](https://www.biorxiv.org/content/10.1101/2022.09.25.509370v1)
+[Link to Nature Neuroscience paper](https://www.nature.com/articles/s41593-025-01893-7)
 
 
 ### Example usage
